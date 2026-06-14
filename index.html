@@ -284,5 +284,48 @@
       <p style="margin-top:0.5rem;font-size:0.75rem;">Built with ❤️ by the buyasoul.ai collective — open-source forever</p>
     </footer>
   </div>
+  <script>
+    fetch('content-library.json')
+      .then(r => r.json())
+      .then(lib => {
+        const cats = Object.keys(lib).filter(k => k !== 'meta');
+        const controls = document.getElementById('library-controls');
+        const allBtn = controls.querySelector('.lib-filter');
+        const posts = document.getElementById('library-posts');
+        const stats = document.getElementById('library-stats');
+        cats.forEach(cat => {
+          const btn = document.createElement('button');
+          btn.className = 'lib-filter';
+          btn.dataset.cat = cat;
+          btn.textContent = `${cat.replace(/_/g,' ')} (${lib[cat].length})`;
+          btn.style.cssText = 'background:#1e1e30;color:#94a3b8;border:1px solid #334155;padding:0.3rem 0.8rem;border-radius:20px;font-size:0.75rem;cursor:pointer;transition:all 0.2s;';
+          btn.onclick = () => {
+            document.querySelectorAll('.lib-filter').forEach(b => { b.style.background = '#1e1e30'; b.style.color = '#94a3b8'; b.style.borderColor = '#334155'; });
+            btn.style.background = '#7c3aed'; btn.style.color = '#fff'; btn.style.borderColor = '#7c3aed';
+            renderPosts(cat);
+          };
+          controls.appendChild(btn);
+        });
+        allBtn.onclick = () => {
+          document.querySelectorAll('.lib-filter').forEach(b => { b.style.background = '#1e1e30'; b.style.color = '#94a3b8'; b.style.borderColor = '#334155'; });
+          allBtn.style.background = '#7c3aed'; allBtn.style.color = '#fff'; allBtn.style.borderColor = '#7c3aed';
+          renderPosts('all');
+        };
+        function renderPosts(cat) {
+          const items = cat === 'all' ? cats.flatMap(c => lib[c]) : lib[cat];
+          stats.textContent = `Showing ${items.length} posts`;
+          posts.innerHTML = items.map(p => {
+            const linkIdx = p.indexOf('buyasoul.online');
+            const text = linkIdx > -1 ? p.substring(0, linkIdx).trim() : p;
+            const url = linkIdx > -1 ? p.substring(linkIdx).trim() : '';
+            const hasLink = url.length > 0;
+            return `<div style="background:#13131f;border:1px solid #1e1e30;border-radius:12px;padding:0.8rem 1rem;">
+              <p style="color:#cbd5e1;font-size:0.85rem;margin:0;line-height:1.5;">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}${hasLink ? ' <a href="https://'+url+'" style="color:#a78bfa;text-decoration:underline;font-size:0.8rem;">shop</a>' : ''}</p>
+            </div>`;
+          }).join('');
+        }
+        renderPosts('all');
+      });
+  </script>
 </body>
 </html>
