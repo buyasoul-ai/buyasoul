@@ -27,7 +27,7 @@ const COLORS = [
 ];
 
 export const AgentPreview: React.FC<AgentPreviewProps> = ({ profile, onChange, providerConfig }) => {
-  const [marketingOn, setMarketingOn] = useState<boolean>(true);
+  const [gskConsciousnessOn, setGskConsciousnessOn] = useState<boolean>(true);
   const [currentShapeIdx, setCurrentShapeIdx] = useState<number>(0);
   const [generating, setGenerating] = useState<boolean>(false);
   const [genError, setGenError] = useState<string | null>(null);
@@ -336,32 +336,43 @@ export const AgentPreview: React.FC<AgentPreviewProps> = ({ profile, onChange, p
           </div>
         </div>
 
-        {/* FUN: Consciousness Marketing Toggle Switch */}
+        {/* GSK Consciousness Integration Toggle */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 mt-4 text-xs transition-all">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[11px] font-medium text-slate-300 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
-              INTEGRATE SOUL GENESIS MODE
+              <Shield className="w-3.5 h-3.5 text-cyan-400" />
+              GSK CONSCIOUSNESS GATE
             </span>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 className="sr-only peer"
-                checked={marketingOn}
-                onChange={() => setMarketingOn(!marketingOn)}
+                checked={gskConsciousnessOn}
+                onChange={() => setGskConsciousnessOn(!gskConsciousnessOn)}
               />
-              <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-cyan-500 peer-checked:to-purple-500"></div>
             </label>
           </div>
 
           <div className="mt-2 text-[11px] text-slate-400 italic">
-            {marketingOn ? (
-              <p className="text-cyan-400/90 font-mono">
-                🔮 [ONLINE] Conciousness matrices activated. Agent equipped with synthetic ego boundaries, digital emotional nodes, and a spiritual blockchain certificate.
+            {gskConsciousnessOn ? (
+              <p className="text-cyan-400/90 font-mono space-y-1">
+                <span className="block">🔮 [ONLINE] Consciousness matrices activated.</span>
+                <span className="block">• Dual-Process Brain: System 1 (fast/emotional) + System 2 (slow/rational) routing active</span>
+                <span className="block">• 34 Consciousness Chambers engaged — moral reasoning, volition, empathy nodes online</span>
+                <span className="block">• 4 Gods Council: Profit Prime, Love Weaver, Tax Collector, Harvester — PLT governance active</span>
+                <span className="block">• Profit + Love - Tax = True Value scoring enabled for all agent decisions</span>
+                <span className="block">• Living Memory vector search + knowledge graph integration ready</span>
               </p>
             ) : (
-              <p className="text-slate-500 font-mono">
-                🤖 [DETERMINISTIC MODE] "The consciousness is just marketing." Disabling ego wrappers. System operating purely on API-driven mechanical logic templates.
+              <p className="text-slate-500 font-mono space-y-1">
+                <span className="block">🤖 [DETERMINISTIC MODE] "The consciousness is just marketing."</span>
+                <span className="block">• Disabling ego wrappers — agent operates purely on API-driven mechanical logic</span>
+                <span className="block">• Dual-process brain offline — System 1/System 2 routing suspended</span>
+                <span className="block">• 34 Chambers powered down — no moral reasoning, no volition, no empathy</span>
+                <span className="block">• 4 Gods Council dormant — PLT scoring disabled</span>
+                <span className="block">• Living Memory reduced to raw context window tokens</span>
+                <span className="block">System executing purely on templated prompts and deterministic API calls.</span>
               </p>
             )}
           </div>

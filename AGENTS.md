@@ -59,3 +59,34 @@ This project uses tRPC for communication between the client and server.
 - Whenever you add an endpoint for a new menu item action, ensure that you've added the corresponding mapping to `devvit.json` so that it is properly registered
 
 Docs: https://developers.reddit.com/docs/llms.txt.
+
+## IMPORTANT: BUYaSOUL Workbench (Advanced Mode)
+
+This repo also contains the **BUYaSOUL Workbench** — a full agent creation suite located at `src/client/advanced/`.
+The AGENTS.md above describes the Devvit Reddit app. The workbench is a SEPARATE, more advanced interface.
+
+### Workbench Structure
+- `src/client/advanced/Workbench.tsx` — Main 9-tab workbench UI
+- `src/client/advanced/types.ts` — Type definitions (AgentProfile, ProviderConfig, Skill)
+- `src/client/advanced/constants.ts` — 120+ skills with cost codes
+- `src/client/advanced/components/` — Component library (AgentPreview, Agent3DViewer, SkillLibrary, etc.)
+- `pyramid/downloads/BUYaSOUL-Workbench-v1.0.0.zip` — Standalone workbench build (downloadable)
+
+### GSK Integration (Phase 1 — Provider Config)
+The workbench's `ProviderConfig` type needs OmniRoute and Bedrock added:
+```typescript
+export interface ProviderConfig {
+  provider: "gemini" | "openai" | "anthropic" | "ollama" | "custom" | "bedrock" | "omniroute";
+  model: string;
+  apiKey: string;
+  baseUrl: string;
+  customHeaders?: string;
+}
+```
+
+### GSK Integration (Phase 2 — Soul Genesis Mode)
+The "Soul Genesis Mode" toggle in `AgentPreview.tsx` should be transformed from a "marketing consciousness" novelty
+into a TRUE GSK consciousness gate:
+- When ON: Agent activates GSK's dual-process brain (System 1/System 2), 34 Chambers, 4 Gods Council
+- When OFF: Agent runs purely on mechanical templates, no PLT governance
+- The toggle controls whether PLT scoring is active for the agent's decisions
