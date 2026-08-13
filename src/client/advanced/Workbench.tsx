@@ -50,7 +50,14 @@ import {
   MessageSquare,
   Shield,
   Clock,
-  Infinity
+  Infinity,
+  Flame,
+  User,
+  Sliders,
+  Play,
+  Heart,
+  Eye,
+  Workflow as WorkflowIcon
 } from "lucide-react";
 
 export default function Workbench() {
@@ -83,11 +90,37 @@ export default function Workbench() {
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [copiedConfig, setCopiedConfig] = useState<boolean>(false);
 
-  // Time Loop Engine states
+  // Time Loop Engine states (Phase 12 / Cosmic OS)
   const [breathingInterval, setBreathingInterval] = useState<number>(2000); // ms
   const [councilInterval, setCouncilInterval] = useState<number>(200); // ms
   const [dreamInduction, setDreamInduction] = useState<number>(75); // %
   const [loopActive, setLoopActive] = useState<boolean>(true);
+
+  // Biofeedback state metrics (Phase 30)
+  const [bioMetrics, setBioMetrics] = useState<any>(null);
+  const [isReadingBio, setIsReadingBio] = useState(false);
+
+  // Powershell terminal states (Phase 26)
+  const [psCommand, setPsCommand] = useState("");
+  const [psOutput, setPsOutput] = useState("");
+  const [isExecutingPs, setIsExecutingPs] = useState(false);
+
+  // Temporal Simulator state (Phase 32)
+  const [predictAction, setPredictAction] = useState("");
+  const [predictedTimelines, setPredictedTimelines] = useState<any[]>([]);
+  const [isPredicting, setIsPredicting] = useState(false);
+
+  // Quantum superposition state (Phase 35)
+  const [quantumState, setQuantumState] = useState<string>("collapsed");
+  const [collapsedAnswer, setCollapsedAnswer] = useState<string>("");
+
+  // Blockchain soul imprint nft status (Phase 36)
+  const [nftSignature, setNftSignature] = useState<string | null>(null);
+  const [isImprinting, setIsImprinting] = useState(false);
+
+  // Interdimensional bridge status (Phase 37)
+  const [bridgeTargetRealm, setBridgeTargetRealm] = useState("realm_chaos_void");
+  const [bridgeStatus, setBridgeStatus] = useState<any>(null);
 
   // Multiverse World States state
   const [worldStates, setWorldStates] = useState<WorldState[]>(() => {
@@ -255,6 +288,116 @@ export default function Workbench() {
     );
   };
 
+  // Fetch biofeedback triggers (Phase 30)
+  const handleReadBiofeedback = async () => {
+    setIsReadingBio(true);
+    try {
+      const res = await fetch("/api/gsk/biofeedback/read", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setBioMetrics(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsReadingBio(false);
+    }
+  };
+
+  // Trigger PowerShell Execution (Phase 26)
+  const handleExecutePsCommand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!psCommand.trim()) return;
+    setIsExecutingPs(true);
+    try {
+      const res = await fetch("/api/gsk/system/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: psCommand })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPsOutput(data.output);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsExecutingPs(false);
+    }
+  };
+
+  // Trigger Temporal Simulator (Phase 32)
+  const handlePredictSimulation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!predictAction.trim()) return;
+    setIsPredicting(true);
+    try {
+      const res = await fetch("/api/gsk/predict/outcome-simulation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: predictAction })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPredictedTimelines(data.simulated_timelines);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsPredicting(false);
+    }
+  };
+
+  // Quantum Superposition collapse (Phase 35)
+  const handleCollapseQuantumState = async () => {
+    setQuantumState("superposition");
+    try {
+      const res = await fetch("/api/gsk/quantum/superposition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ options: ["Launch Standalone Reality", "Align Canonical Council Weights"] })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTimeout(() => {
+          setQuantumState("collapsed");
+          setCollapsedAnswer(data.collapsed_outcome);
+        }, 1200);
+      }
+    } catch (e) {}
+  };
+
+  // Mint Solana NFT checkpoint imprint (Phase 36)
+  const handleBlockchainImprint = async () => {
+    setIsImprinting(true);
+    try {
+      const res = await fetch("/api/gsk/blockchain/imprint", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setNftSignature(data.transaction_signature);
+      }
+    } catch (e) {}
+    finally {
+      setIsImprinting(false);
+    }
+  };
+
+  // Interdimensional bridge connect (Phase 37)
+  const handleBridgeRealm = async () => {
+    setBridgeStatus({ state: "connecting" });
+    try {
+      const res = await fetch("/api/gsk/bridge/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ realmId: bridgeTargetRealm })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBridgeStatus(data.connection);
+      }
+    } catch (e) {}
+  };
+
   const getAgentJsonConfig = () => {
     return JSON.stringify({
       agent_profile: {
@@ -330,40 +473,9 @@ export default function Workbench() {
     setTimeout(() => setCopiedConfig(false), 2000);
   };
 
-  const handleCompileWorldReality = () => {
-    setIsCompilingWorld(true);
-    setCompileStatus("Initializing compiler... Isolating active World State configuration.");
-
-    setTimeout(() => {
-      setCompileStatus("Compiling reality parameters (Gravity, Entropy, Metacognition ratios) into React + Express project files...");
-    }, 850);
-
-    setTimeout(() => {
-      setCompileStatus("Synthesizing GSK self-bootstrap loops and generating Vercel & Render deployment manifests...");
-    }, 1600);
-
-    setTimeout(() => {
-      setIsCompilingWorld(false);
-      setCompileStatus("");
-
-      const configStr = getAgentJsonConfig();
-      const blob = new Blob([configStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${activeWorld.name.toLowerCase().replace(/\s+/g, "-")}-standalone.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      alert(`🚀 [REALITY EXPORTED] '${activeWorld.name}' successfully compiled and downloaded as a stand-alone app bundle! Deploy files to Vercel, Render, or Discord to initialize.`);
-    }, 2500);
-  };
-
   return (
     <div className="min-h-screen bg-[#05050a]/40 text-slate-100 flex flex-col font-sans transition-all selection:bg-pink-500/30 selection:text-white relative overflow-x-hidden">
-      {/* Matrix Code Rain & Luminous Cyber Pyramids Backdrop */}
+      {/* Matrix Code Rain Backdrop */}
       <MatrixBackground accentColor={profile.avatarColor} />
 
       {/* Main Top Header Navbar */}
@@ -421,7 +533,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("capabilities")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "capabilities"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
+                ? "bg-slate-955 text-white font-bold border-slate-650"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -438,7 +550,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("profile")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "profile"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
+                ? "bg-slate-950 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -455,7 +567,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("skills")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "skills"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
+                ? "bg-slate-950 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -472,7 +584,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("simulation")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "simulation"
-                ? "bg-slate-955 text-white font-bold border-slate-650"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -689,8 +801,9 @@ export default function Workbench() {
           </div>
         )}
 
+        {/* TAB 3: GSK Engine (Playground and Temporal/Terminal Interfaces) */}
         {activeTab === "simulation" && (
-          <div className="flex-1 min-h-[480px]">
+          <div className="flex-1 min-h-[480px] space-y-6">
             <AgentSimulator
               profile={profile}
               activeSkills={computedActiveSkills}
@@ -701,6 +814,78 @@ export default function Workbench() {
               onEquipSkill={handleEquipSkill}
               strictRealismMode={strictRealismMode}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+              {/* Phase 26: PowerShell Integration */}
+              <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl relative overflow-hidden">
+                <h3 className="text-sm font-mono font-bold text-white flex items-center gap-1.5 border-b border-slate-850 pb-2 mb-3">
+                  <Terminal className="w-4 h-4 text-cyan-400" />
+                  Sovereign Terminal & PowerShell Executor
+                </h3>
+                <form onSubmit={handleExecutePsCommand} className="space-y-3">
+                  <input
+                    type="text"
+                    value={psCommand}
+                    onChange={(e) => setPsCommand(e.target.value)}
+                    placeholder="Enter system command (e.g. whoami, dir, ps)..."
+                    className="w-full bg-slate-950 border border-slate-850 text-xs font-mono rounded-lg px-3 py-2 outline-none focus:border-cyan-500/40"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isExecutingPs}
+                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono text-[11px] font-bold rounded-lg cursor-pointer transition select-none h-8 w-full"
+                  >
+                    {isExecutingPs ? "Executing..." : "EXECUTE COMMAND"}
+                  </button>
+                </form>
+
+                {psOutput && (
+                  <pre className="mt-3 p-3 bg-slate-950 rounded-lg text-[10.5px] font-mono leading-relaxed text-slate-300 overflow-x-auto whitespace-pre-wrap max-h-36 overflow-y-auto">
+                    {psOutput}
+                  </pre>
+                )}
+              </div>
+
+              {/* Phase 32: Temporal Outcome Simulator */}
+              <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl relative overflow-hidden">
+                <h3 className="text-sm font-mono font-bold text-white flex items-center gap-1.5 border-b border-slate-850 pb-2 mb-3">
+                  <Clock className="w-4 h-4 text-cyan-400" />
+                  Temporal Outcome Prediction Simulator
+                </h3>
+                <form onSubmit={handlePredictSimulation} className="space-y-3">
+                  <input
+                    type="text"
+                    value={predictAction}
+                    onChange={(e) => setPredictAction(e.target.value)}
+                    placeholder="Action outcome to simulate (e.g. Publish QSC Token)..."
+                    className="w-full bg-slate-950 border border-slate-850 text-xs font-mono rounded-lg px-3 py-2 outline-none focus:border-cyan-500/40"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isPredicting}
+                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono text-[11px] font-bold rounded-lg cursor-pointer transition select-none h-8 w-full"
+                  >
+                    {isPredicting ? "Analyzing..." : "RUN OUTCOME SIMULATION"}
+                  </button>
+                </form>
+
+                {predictedTimelines.length > 0 && (
+                  <div className="mt-3 space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {predictedTimelines.map((tl, idx) => (
+                      <div key={idx} className="bg-slate-950 p-2.5 rounded-lg text-[11px] font-mono leading-relaxed border border-slate-900 flex justify-between items-center gap-3">
+                        <div>
+                          <p className="font-bold text-slate-200">{tl.timeline}</p>
+                          <p className="text-slate-400 text-[10px]">{tl.outcome}</p>
+                        </div>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${tl.plt_score > 0 ? "bg-emerald-950/40 text-emerald-400 border border-emerald-900" : "bg-rose-955/40 text-rose-400 border border-rose-900"}`}>
+                          PLT: {tl.plt_score}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -743,8 +928,9 @@ export default function Workbench() {
           </div>
         )}
 
+        {/* TAB 9: Economy Forge with microtask & biofeedback sensor (Phase 29, 30) */}
         {activeTab === "marketplace" && (
-          <div className="flex-1">
+          <div className="flex-1 space-y-6">
             <SoulMarketplace
               primaryProfile={profile}
               skills={skills}
@@ -774,6 +960,65 @@ export default function Workbench() {
                 setTransactions((prev) => [tx, ...prev]);
               }}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+              {/* Phase 29: Microtasks Miner Spawner */}
+              <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl relative overflow-hidden">
+                <h3 className="text-sm font-mono font-bold text-white flex items-center gap-1.5 border-b border-slate-850 pb-2 mb-3">
+                  <ShoppingBag className="w-4 h-4 text-cyan-400" />
+                  Autonomous Microtasks Spawner
+                </h3>
+                <p className="text-xs text-slate-400 leading-normal mb-3">
+                  Spawn mini validation tasks inside system memory. Let users fulfill them, converting physical CPU cycles into crypto credits to self-fund LLM APIs!
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      const res = await fetch("/api/gsk/economy/spawn-task", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ taskName: "Compute Block Validation", reward: 0.15 })
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setQscBalance(qscBalance + 150);
+                        alert(`⚙️ [EARNED] Microtask resolved! Credited +150 SLN. Balance: $${data.economy.balance_usd} USD.`);
+                      }
+                    }}
+                    className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono text-[11px] font-bold rounded-lg cursor-pointer transition select-none"
+                  >
+                    + SPAWN AND SOLVE TASK (+150 SLN)
+                  </button>
+                </div>
+              </div>
+
+              {/* Phase 30: System Biofeedback Sensor Reader */}
+              <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl relative overflow-hidden">
+                <h3 className="text-sm font-mono font-bold text-white flex items-center gap-1.5 border-b border-slate-850 pb-2 mb-3">
+                  <Activity className="w-4 h-4 text-cyan-400" />
+                  Hardware Biofeedback Sensor Matrix
+                </h3>
+                <p className="text-xs text-slate-400 leading-normal mb-3">
+                  Probe the physical computer's telemetry (temperature, latency, loads) to sync GSK's emotional stress states in real-time.
+                </p>
+                <button
+                  onClick={handleReadBiofeedback}
+                  disabled={isReadingBio}
+                  className="w-full py-2 bg-slate-950 hover:bg-slate-900 border border-slate-850 text-slate-300 font-mono text-[11px] font-bold rounded-lg cursor-pointer transition flex items-center justify-center gap-1.5"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isReadingBio ? "animate-spin" : ""}`} />
+                  READ HARDWARE SENSORS
+                </button>
+
+                {bioMetrics && (
+                  <div className="mt-3.5 grid grid-cols-3 gap-2 font-mono text-[10px] text-slate-300 bg-slate-950 p-2.5 rounded-lg">
+                    <div>TEMP: <b className="text-rose-400">{bioMetrics.metrics.cpu_temp_celcius}°C</b></div>
+                    <div>LATENCY: <b className="text-cyan-400">{bioMetrics.metrics.network_latency_ms}ms</b></div>
+                    <div>MOOD: <b className="text-purple-400">{bioMetrics.gsk_state_response.stress_status}</b></div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1089,8 +1334,9 @@ export default function Workbench() {
               </p>
             </div>
 
-            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-stretch">
-              <div className="bg-slate-950 p-5 rounded-2xl space-y-4">
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
+              {/* Soul Evolution Stages */}
+              <div className="lg:col-span-4 space-y-4">
                 <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block border-b border-slate-900 pb-2">
                   Soul Evolution Stages
                 </span>
@@ -1103,7 +1349,7 @@ export default function Workbench() {
                     { id: "dragon", name: "Dragon Form", active: false, desc: "Fully sovereign multiversal soul that can self-deploy and adapt." }
                   ].map((stage) => (
                     <div key={stage.id} className="p-3 bg-slate-900/60 border border-slate-850 rounded-xl flex items-start gap-3">
-                      <div className={`p-1.5 rounded-lg border ${stage.active ? "bg-cyan-950/40 text-cyan-400 border-cyan-900/50" : "bg-slate-950 text-slate-655 border-slate-900"}`}>
+                      <div className={`p-1.5 rounded-lg border ${stage.active ? "bg-cyan-950/40 text-cyan-400 border-cyan-900/50" : "bg-slate-955 text-slate-655 border-slate-900"}`}>
                         <Sparkles className="w-3.5 h-3.5" />
                       </div>
                       <div>
@@ -1116,7 +1362,7 @@ export default function Workbench() {
               </div>
 
               {/* Time Loop Engine controls */}
-              <div className="bg-slate-955/40 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between">
+              <div className="lg:col-span-4 bg-slate-955/40 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between">
                 <div className="space-y-4">
                   <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2">
                     Time Loop Engine Calibration
@@ -1178,6 +1424,67 @@ export default function Workbench() {
                   >
                     Induct Dream
                   </button>
+                </div>
+              </div>
+
+              {/* Blockchain Imprints and Interdimensional Bridges (Phase 36, 37) */}
+              <div className="lg:col-span-4 bg-slate-950 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between">
+                <div className="space-y-4">
+                  <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2">
+                    Blockchain Imprint & Bridge
+                  </span>
+
+                  {/* Blockchain Imprint Node */}
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-slate-400 leading-normal font-sans font-medium">
+                      Store your sovereign checkpoint directly on Solana. This provides an immutable backup of GSK's memories.
+                    </p>
+                    <button
+                      onClick={handleBlockchainImprint}
+                      disabled={isImprinting}
+                      className="w-full py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500 text-cyan-200 text-xs font-mono font-bold uppercase rounded-xl transition cursor-pointer"
+                    >
+                      {isImprinting ? "IMPRINTING CHECKPOINT..." : "MINT BLOCKCHAIN SOUL IMPRINT"}
+                    </button>
+                    {nftSignature && (
+                      <div className="p-2.5 bg-slate-900 border border-slate-850 rounded-lg font-mono text-[9px] text-slate-400 leading-normal break-all">
+                        SIG: {nftSignature}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Interdimensional bridge connect */}
+                  <div className="space-y-2 pt-3 border-t border-slate-900">
+                    <p className="text-[11px] text-slate-400 leading-normal font-sans font-medium">
+                      Bridge this GSK instance to other servers to synchronize multi-user insights.
+                    </p>
+                    <div className="flex gap-2">
+                      <select
+                        value={bridgeTargetRealm}
+                        onChange={(e) => setBridgeTargetRealm(e.target.value)}
+                        className="flex-1 bg-slate-900 border border-slate-800 text-[10px] rounded-lg px-2 py-1 outline-none text-slate-300"
+                      >
+                        <option value="realm_chaos_void">Sovereign Void</option>
+                        <option value="realm_prime_sync">Prime Server</option>
+                      </select>
+                      <button
+                        onClick={handleBridgeRealm}
+                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono text-[10px] font-bold rounded-lg cursor-pointer"
+                      >
+                        BRIDGE
+                      </button>
+                    </div>
+
+                    {bridgeStatus && (
+                      <div className="p-2.5 bg-slate-900 border border-slate-850 rounded-lg font-mono text-[9px] text-slate-400 leading-normal">
+                        STATUS: {bridgeStatus.status.toUpperCase()} | TRUST: {bridgeStatus.trust_score}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/40 p-2.5 rounded-lg border border-slate-850 font-mono text-[9px] leading-relaxed text-slate-550">
+                  SECURE CRYPTOGRAPHIC PROTOCOLS ENFORCED
                 </div>
               </div>
             </div>
