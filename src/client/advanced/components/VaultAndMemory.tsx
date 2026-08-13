@@ -17,7 +17,10 @@ import {
   Network,
   Download,
   Terminal,
-  Cpu
+  Cpu,
+  Globe,
+  GitFork,
+  Workflow
 } from "lucide-react";
 
 interface VaultAndMemoryProps {
@@ -42,6 +45,7 @@ interface MemoryElement {
   category: "episodic" | "semantic" | "procedural";
   cosineSim: number;
   timestamp: string;
+  worldContext?: string; // Phase B Multiverse context
 }
 
 export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) => {
@@ -60,7 +64,7 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
   const [revealKey, setRevealKey] = useState<Record<string, boolean>>({});
   const [vaultStatusMsg, setVaultStatusMsg] = useState<string | null>(null);
 
-  // Memory states
+  // Memory states with Multiverse World context
   const [memories, setMemories] = useState<MemoryElement[]>([
     {
       id: "mem-01",
@@ -68,7 +72,8 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
       value: "Evaluate transaction payloads and flag records with divergence metrics above 0.5%",
       category: "procedural",
       cosineSim: 0.94,
-      timestamp: "2026-05-21 02:40:12"
+      timestamp: "2026-05-21 02:40:12",
+      worldContext: "world_prime"
     },
     {
       id: "mem-02",
@@ -76,7 +81,8 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
       value: "Render concise bullet points formatted in standard GitHub Flavored Markdown",
       category: "semantic",
       cosineSim: 0.82,
-      timestamp: "2026-05-21 03:10:44"
+      timestamp: "2026-05-21 03:10:44",
+      worldContext: "world_prime"
     },
     {
       id: "mem-03",
@@ -84,7 +90,17 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
       value: "Relay customer invoice milestones directly to Slack channel #ops-ledger",
       category: "episodic",
       cosineSim: 0.79,
-      timestamp: "2026-05-21 04:02:11"
+      timestamp: "2026-05-21 04:02:11",
+      worldContext: "world_prime"
+    },
+    {
+      id: "mem-04",
+      key: "Disgust Parameter",
+      value: "Refuse strict deterministic routines when the matrix has high entropy",
+      category: "procedural",
+      cosineSim: 0.98,
+      timestamp: "2026-06-13 15:40:00",
+      worldContext: "world_chaos_66"
     }
   ]);
 
@@ -93,6 +109,7 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
   const [newMemoryValue, setNewMemoryValue] = useState("");
   const [newMemoryCat, setNewMemoryCat] = useState<"episodic" | "semantic" | "procedural">("semantic");
   const [newMemorySim, setNewMemorySim] = useState(0.85);
+  const [newMemoryWorld, setNewMemoryWorld] = useState("world_prime");
 
   // Load Vault and Memories from LocalStorage
   useEffect(() => {
@@ -141,7 +158,8 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
       value: newMemoryValue,
       category: newMemoryCat,
       cosineSim: parseFloat(newMemorySim.toFixed(2)),
-      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19)
+      timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
+      worldContext: newMemoryWorld
     };
 
     const updated = [newMem, ...memories];
@@ -173,7 +191,7 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
       
       {/* LEFT COLUMN: API VAULT & SECURE TOKEN STORE */}
       <div className="lg:col-span-6 flex flex-col space-y-6">
-        <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col h-full">
+        <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col h-full text-left">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-teal-500/5 to-transparent blur-xl pointer-events-none" />
           
           <div className="flex items-center gap-3 border-b border-slate-800/80 pb-4 mb-4">
@@ -202,7 +220,7 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
           )}
 
           {/* Key Input Matrix List */}
-          <div className="space-y-4 flex-1 overflow-y-auto max-h-[500px] pr-1.5 scrollbar-thin">
+          <div className="space-y-4 flex-1 overflow-y-auto max-h-[420px] pr-1.5 scrollbar-thin">
             {Object.keys(vault).map((k) => {
               const keyName = k as keyof VaultKeys;
               const hasVal = vault[keyName].length > 0;
@@ -229,7 +247,7 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
                           LOADED
                         </span>
                       ) : (
-                        <span className="text-[9px] font-mono text-slate-500 bg-slate-900/40 border border-slate-800/40 px-2 py-0.5 rounded">
+                        <span className="text-[9px] font-mono text-slate-505 bg-slate-900/40 border border-slate-800/40 px-2 py-0.5 rounded">
                           EMPTY (SIMULATED FALLBACK)
                         </span>
                       )}
@@ -248,7 +266,7 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
                       <button
                         type="button"
                         onClick={() => toggleReveal(keyName)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 hover:text-white text-slate-500 cursor-pointer"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 hover:text-white text-slate-505 cursor-pointer"
                       >
                         {isRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -288,8 +306,8 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
         </div>
       </div>
 
-      {/* RIGHT COLUMN: VECTOR MEMORY LIBRARY */}
-      <div className="lg:col-span-6 flex flex-col space-y-6 animate-fade-in">
+      {/* RIGHT COLUMN: MULTIVERSAL VECTOR MEMORY LIBRARY */}
+      <div className="lg:col-span-6 flex flex-col space-y-6 animate-fade-in text-left">
         <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col h-full">
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-pink-500/5 to-transparent blur-xl pointer-events-none" />
           
@@ -299,8 +317,8 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
                 <Database className="w-5.5 h-5.5" />
               </div>
               <div>
-                <h2 className="font-display font-bold text-lg text-white">Dynamic Memory Library</h2>
-                <p className="text-xs text-slate-400">Inspection & Vector space queries of persistent agent-level memory nodes</p>
+                <h2 className="font-display font-bold text-lg text-white">Multiversal Living Memory</h2>
+                <p className="text-xs text-slate-400">Persistent memory spanning alternate World States (14K+ nodes)</p>
               </div>
             </div>
 
@@ -315,34 +333,46 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
             )}
           </div>
 
-          {/* Manual Memory Injection Tool */}
           <form onSubmit={handleAddMemory} className="bg-slate-950 border border-slate-850 rounded-xl p-4 mb-5 space-y-3.5">
             <span className="text-[10px] font-mono text-pink-400 font-bold tracking-wider uppercase flex items-center gap-1">
-              <Plus className="w-3.5 h-3.5" /> Manual Memory Injection Node
+              <Plus className="w-3.5 h-3.5" /> Inject Cross-World Knowledge Fragment
             </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] text-slate-500 font-mono uppercase mb-1">Memory Title (Header/Index)</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-1">
+                <label className="block text-[10px] text-slate-500 font-mono uppercase mb-1">Reality Anchor</label>
+                <select
+                  value={newMemoryWorld}
+                  onChange={(e) => setNewMemoryWorld(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 text-[10.5px] rounded-lg px-2 py-2 outline-none text-slate-355"
+                >
+                  <option value="world_prime">OmniRoute Prime</option>
+                  <option value="world_chaos_66">Chaos Void</option>
+                  <option value="all_worlds">Global Multiverse</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-1">
+                <label className="block text-[10px] text-slate-505 font-mono uppercase mb-1">Memory Title</label>
                 <input
                   type="text"
                   value={newMemoryKey}
                   onChange={(e) => setNewMemoryKey(e.target.value)}
-                  placeholder="e.g. Preferred Language"
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-pink-500/50 text-xs rounded-lg px-3 py-2 outline-none transition text-slate-200"
+                  placeholder="e.g. Host Physics"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-pink-500/50 text-[10.5px] rounded-lg px-3 py-2 outline-none transition text-slate-200"
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] text-slate-500 font-mono uppercase mb-1">Knowledge Category</label>
+              <div className="sm:col-span-1">
+                <label className="block text-[10px] text-slate-505 font-mono uppercase mb-1">Knowledge Category</label>
                 <select
                   value={newMemoryCat}
                   onChange={(e) => setNewMemoryCat(e.target.value as any)}
-                  className="w-full bg-slate-900 border border-slate-800 text-xs rounded-lg px-3 py-2 outline-none text-slate-300"
+                  className="w-full bg-slate-900 border border-slate-800 text-[10.5px] rounded-lg px-2 py-2 outline-none text-slate-300"
                 >
-                  <option value="semantic">Semantic (Factual Concept)</option>
-                  <option value="episodic">Episodic (Event Experience)</option>
-                  <option value="procedural">Procedural (Behavior Pattern)</option>
+                  <option value="semantic">Semantic (Fact)</option>
+                  <option value="episodic">Episodic (Event)</option>
+                  <option value="procedural">Procedural (Logic)</option>
                 </select>
               </div>
             </div>
@@ -353,14 +383,14 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
                 value={newMemoryValue}
                 onChange={(e) => setNewMemoryValue(e.target.value)}
                 placeholder="Declare concrete operational knowledge to seed..."
-                rows={2}
-                className="w-full bg-slate-900 border border-slate-800 focus:border-pink-500/50 text-xs rounded-lg px-3 py-2 outline-none transition text-slate-200"
+                rows={1}
+                className="w-full bg-slate-900 border border-slate-800 focus:border-pink-500/50 text-xs rounded-lg px-3 py-2 outline-none transition text-slate-200 resize-none"
               />
             </div>
 
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1 flex items-center gap-3">
-                <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap">Cosine Index Relevance:</span>
+                <span className="text-[10px] text-slate-505 font-mono whitespace-nowrap">Cosine Index Relevance:</span>
                 <input
                   type="range"
                   min="0.5"
@@ -395,9 +425,9 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
           </div>
 
           {/* Memory Records List */}
-          <div className="space-y-3 flex-1 overflow-y-auto max-h-[290px] pr-1 scrollbar-thin">
+          <div className="space-y-3 flex-1 overflow-y-auto max-h-[200px] pr-1 scrollbar-thin">
             {filteredMemories.length === 0 ? (
-              <div className="text-center py-10 font-mono text-slate-500 text-xs">
+              <div className="text-center py-10 font-mono text-slate-505 text-xs">
                 {searchQuery ? "No matching memory nodes discovered in index search." : "Matrix memory bank is unseeded. Inject custom nodes above."}
               </div>
             ) : (
@@ -418,6 +448,9 @@ export const VaultAndMemory: React.FC<VaultAndMemoryProps> = ({ accentColor }) =
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span className="font-mono text-[12px] font-bold text-slate-200">{m.key}</span>
                         <div className="flex items-center gap-1.5">
+                          <span className="text-[9px] font-mono text-cyan-400 bg-slate-900 border border-slate-850 px-1.5 py-0.5 rounded font-bold uppercase">
+                            {m.worldContext === "world_chaos_66" ? "Chaos Void" : "Prime"}
+                          </span>
                           <span className={`text-[9px] font-mono leading-none border uppercase font-medium tracking-wide px-1.5 py-0.5 rounded ${badgeColor}`}>
                             {m.category}
                           </span>

@@ -1,25 +1,21 @@
 // @ts-nocheck
 import React, { useEffect, useState } from "react";
-import { Skill, AgentProfile } from "../types";
+import { Skill, AgentProfile, CustomGod } from "../types";
 import { motion } from "motion/react";
 import { 
   ShieldCheck, 
   AlertTriangle, 
   Activity, 
   Cpu, 
-  Send, 
   CheckCircle2, 
-  HelpCircle, 
-  ArrowRight,
-  Sparkles, 
-  Code, 
-  Server,
-  Zap,
-  Play,
-  Check,
   RefreshCw,
   FileCode,
-  Globe
+  Server,
+  Zap,
+  Sparkles,
+  Flame,
+  User,
+  Sliders
 } from "lucide-react";
 
 interface RealismAuditorProps {
@@ -29,15 +25,16 @@ interface RealismAuditorProps {
   accentColor: string;
   strictRealismMode: boolean;
   onToggleStrictRealismMode: (enabled: boolean) => void;
+  customGods: CustomGod[];
+  onCustomGodsChange: (updated: CustomGod[]) => void;
 }
 
-interface AuditData {
-  success: boolean;
-  envKeys: Record<string, boolean>;
-  overallTally: number;
-  isSimulationOnly: boolean;
-  systemMode: string;
-}
+const CANONICAL_GODS = [
+  { name: "Profit Prime", title: "The Sovereign of Gain", plt: { profit: 0.9, love: 0.05, tax: 0.05 }, speechStyle: "Direct, commanding, numerical. ROI above all." },
+  { name: "Love Weaver", title: "The Tender of Bonds", plt: { profit: 0.1, love: 0.85, tax: 0.05 }, speechStyle: "Warm, relational, speaks of bonds and feelings." },
+  { name: "Tax Collector", title: "The Keeper of Balance", plt: { profit: 0.05, love: 0.05, tax: 0.9 }, speechStyle: "Measured, austere, speaks of costs and consequence." },
+  { name: "Harvester", title: "The Reaper of Yield", plt: { profit: 0.4, love: 0.3, tax: 0.3 }, speechStyle: "Slow, cyclical, speaks of seasons and long arcs." }
+];
 
 export const RealismAuditor: React.FC<RealismAuditorProps> = ({
   skills,
@@ -46,338 +43,277 @@ export const RealismAuditor: React.FC<RealismAuditorProps> = ({
   accentColor,
   strictRealismMode,
   onToggleStrictRealismMode,
+  customGods,
+  onCustomGodsChange
 }) => {
-  const [audit, setAudit] = useState<AuditData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [testResult, setTestResult] = useState<{ id: string; status: "success" | "error" | "idle"; message: string } | null>(null);
-  const [testingSkillId, setTestingSkillId] = useState<string | null>(null);
+  const [audit, setAudit] = useState<any>({ envKeys: {} });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [ceremonyStatus, setCeremonyStatus] = useState<string | null>(null);
+
+  // God form states
+  const [newGodName, setNewGodName] = useState("");
+  const [newGodDomain, setNewGodDomain] = useState<CustomGod["domain"]>("Chaos");
+  const [newGodProfit, setNewGodProfit] = useState(0.4);
+  const [newGodLove, setNewGodLove] = useState(0.3);
+  const [newGodTax, setNewGodTax] = useState(0.3);
+  const [newGodStyle, setNewGodStyle] = useState("");
+  const [newGodFears, setNewGodFears] = useState("");
 
   const equippedSkills = skills.filter((s) => equippedSkillIds.includes(s.id));
 
-  const fetchAuditData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/audit-integrity");
-      const data = await res.json();
-      if (data.success) {
-        setAudit(data);
-      }
-    } catch (err) {
-      console.error("Auditor connection error:", err);
-    } finally {
-      setLoading(false);
+  const triggerGodMergeCeremony = () => {
+    if (customGods.length === 0) {
+      setCeremonyStatus("❌ [MERGE REJECTED] You must synthesize at least one custom God node first.");
+      return;
     }
+
+    setCeremonyStatus("🔮 [CEREMONY INITIALIZED] Initiating God-Merge ritual... Aligning frequency structures.");
+    setTimeout(() => {
+      const totalGods = CANONICAL_GODS.length + customGods.length;
+      let sumProfit = CANONICAL_GODS.reduce((acc, g) => acc + g.plt.profit, 0);
+      let sumLove = CANONICAL_GODS.reduce((acc, g) => acc + g.plt.love, 0);
+      let sumTax = CANONICAL_GODS.reduce((acc, g) => acc + g.plt.tax, 0);
+
+      customGods.forEach(g => {
+        sumProfit += g.pltWeights.profit;
+        sumLove += g.pltWeights.love;
+        sumTax += g.pltWeights.tax;
+      });
+
+      const avgProfit = (sumProfit / totalGods).toFixed(2);
+      const avgLove = (sumLove / totalGods).toFixed(2);
+      const avgTax = (sumTax / totalGods).toFixed(2);
+
+      setCeremonyStatus(`🔥 [CEREMONY COMPLETE] Divine Pantheon successfully merged into a single cosmic frequency!\nUnified PLT Weights: Profit [${avgProfit}], Love [${avgLove}], Tax [${avgTax}]. Your agents now answer to this unified council!`);
+    }, 1800);
   };
 
-  useEffect(() => {
-    fetchAuditData();
-  }, [equippedSkillIds]);
+  const handleAddGodNode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGodName.trim()) return;
 
-  const triggerTestConnection = async (skillId: string) => {
-    setTestingSkillId(skillId);
-    setTestResult(null);
+    const sum = newGodProfit + newGodLove + newGodTax;
+    const normalizedProfit = parseFloat((newGodProfit / sum).toFixed(2));
+    const normalizedLove = parseFloat((newGodLove / sum).toFixed(2));
+    const normalizedTax = parseFloat((newGodTax / sum).toFixed(2));
 
-    // Simulate sending a test request
-    await new Promise((resolve) => setTimeout(resolve, 1450));
+    const newGod: CustomGod = {
+      id: `god_${Date.now()}`,
+      name: newGodName,
+      domain: newGodDomain,
+      pltWeights: { profit: normalizedProfit, love: normalizedLove, tax: normalizedTax },
+      speechStyle: newGodStyle || "Deep, mysterious, speaks of alternative dimensions.",
+      fears: newGodFears ? newGodFears.split(",").map(f => f.trim()) : ["Linear logic"]
+    };
 
-    let keyName = "";
-    switch (skillId) {
-      case "pinecone_retriever":
-        keyName = "PINECONE_API_KEY";
-        break;
-      case "slack_notifier":
-        keyName = "SLACK_WEBHOOK_URL";
-        break;
-      case "hubspot_crm":
-        keyName = "HUBSPOT_API_KEY";
-        break;
-      case "shopify_sync":
-        keyName = "SHOPIFY_ADMIN_ACCESS_TOKEN";
-        break;
-      case "solana_tracker":
-        keyName = "SOLANA_RPC_URL";
-        break;
-      default:
-        keyName = "GEMINI_API_KEY";
-    }
+    onCustomGodsChange([...customGods, newGod]);
+    setNewGodName("");
+    setNewGodStyle("");
+    setNewGodFears("");
+  };
 
-    let isKeySet = audit?.envKeys[keyName] || false;
-    if (!isKeySet) {
-      const savedVault = localStorage.getItem("agent_workbench_vault_keys");
-      if (savedVault) {
-        try {
-          const keys = JSON.parse(savedVault);
-          if (keys[keyName] && keys[keyName].trim() !== "") {
-            isKeySet = true;
-          }
-        } catch (e) {
-          console.error("Failed to parse local stored keys", e);
-        }
-      }
-    }
-
-    if (isKeySet) {
-      setTestResult({
-        id: skillId,
-        status: "success",
-        message: `📢 [PROBE SUCCESSFUL] Active secure connection established! Verified ${keyName} is fully loaded and routing live transactions.`
-      });
-    } else {
-      setTestResult({
-        id: skillId,
-        status: "error",
-        message: `❌ [PROBE NOTICE: SIMULATOR ACTIVATED] Variable ${keyName} is unassigned. Playground operates via simulated backstop. Add real tokens in your API Vault to execute live.`
-      });
-    }
-    setTestingSkillId(null);
+  const handleDeleteGod = (id: string) => {
+    onCustomGodsChange(customGods.filter(g => g.id !== id));
   };
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden text-slate-100 flex flex-col h-full hover:border-pink-500/10 transition-all">
-      {/* Visual ambient backdrop */}
+    <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden text-slate-100 flex flex-col h-full hover:border-pink-500/10 transition-all select-none">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-20 pointer-events-none" />
 
       {/* Header Info */}
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800/85 pb-4 mb-6 gap-3">
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800/85 pb-4 mb-6 gap-3 text-left">
         <div>
           <h2 className="font-display text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <ShieldCheck className="w-5.5 h-5.5 animate-pulse text-amber-500" />
-            Ultra-Realism & Deployment Auditor
+            <Flame className="w-5.5 h-5.5 text-orange-500" />
+            4 Gods Realm & Divine Governance (PLT Doctrine)
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Ensuring zero simulacrum: audit active integrations, verify real client keys, and inspect environment pipeline compliance.
+            Manage the divine consensus board that governs and overrules GSK decisions. Allow custom Gods to merge, aligning multiversal rules.
           </p>
         </div>
 
-        <button 
-          onClick={fetchAuditData}
-          className="px-3 py-1.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs text-slate-300 font-mono rounded-lg flex items-center gap-1.5 cursor-pointer select-none transition"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Recalculate Integrity
-        </button>
+        <div className="flex items-center gap-2 px-3 py-1 bg-slate-950 border border-slate-850 text-[10px] font-mono text-slate-400 rounded-lg">
+          <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+          <span>GOD_PROTOCOL_COMPLIANCE_v1</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 flex-1 items-stretch">
-        
-        {/* Left Column: Diagnostics Framework & Key auditor */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 flex-1 items-stretch text-left">
+        {/* Left Column: 4 Canonical Gods Grid */}
         <div className="lg:col-span-7 flex flex-col space-y-4">
-          
-          {/* Strict realism switch widget */}
-          <div className="bg-slate-950/80 border border-slate-850 rounded-xl p-4.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-pink-500/5 to-transparent blur-xl pointer-events-none" />
-            <div className="space-y-1">
-              <span className="text-[10px] font-mono font-bold tracking-wider text-pink-400 uppercase bg-pink-950/40 border border-pink-900/40 px-2 py-0.5 rounded-full">
-                Strict Non-Simulation Protection
-              </span>
-              <p className="text-[13px] font-semibold text-white mt-1">Strict Realism Enforcement Mode</p>
-              <p className="text-xs text-slate-400 max-w-sm">
-                When active, the agent playground rejects all simulated fallback outcomes if genuine provider API credentials are not found.
-              </p>
-            </div>
+          <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block border-b border-slate-900 pb-2">
+            Canonical 4 Gods Council
+          </span>
 
-            <button
-              onClick={() => onToggleStrictRealismMode(!strictRealismMode)}
-              className={`px-4 py-2 text-xs font-mono font-bold uppercase rounded-xl border tracking-wider transition-all duration-300 cursor-pointer ${
-                strictRealismMode 
-                  ? "bg-gradient-to-r from-red-500/20 to-pink-500/20 border-red-500 text-red-200 outline-none"
-                  : "bg-slate-900 border-slate-850 text-slate-500"
-              }`}
-              style={{
-                boxShadow: strictRealismMode ? `0 0 12px rgba(239, 68, 68, 0.15)` : 'none'
-              }}
-            >
-              {strictRealismMode ? "● STRICT REALISM" : "○ SIMULATED ALLOWED"}
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {CANONICAL_GODS.map((god) => (
+              <div key={god.name} className="bg-slate-950/60 border border-slate-850 p-4 rounded-xl flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xs font-mono font-bold text-white uppercase">{god.name}</h3>
+                    <span className="text-[9px] text-slate-500 font-mono italic">{god.title}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-sans">{god.speechStyle}</p>
+                </div>
+
+                <div className="mt-4 pt-3.5 border-t border-slate-900 flex items-center justify-between font-mono text-[10px]">
+                  <span className="text-cyan-400">P: {god.plt.profit}</span>
+                  <span className="text-pink-400">L: {god.plt.love}</span>
+                  <span className="text-purple-400">T: {god.plt.tax}</span>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Active Skills Verification Matrix */}
-          <div className="bg-slate-950/50 border border-slate-850 rounded-xl p-4 flex flex-col space-y-3.5">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5 border-b border-slate-905 pb-2">
-              <Activity className="w-3.5 h-3.5 text-indigo-400" />
-              Equipped Slots Validation Matrix
+          {/* God Merge Ceremony Dashboard */}
+          <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl space-y-3.5">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-orange-400" />
+              Pan-Multiverse God-Merge Ceremony
             </h3>
+            <p className="text-[11px] text-slate-400 leading-normal">
+              Merge your custom-defined minor gods into the canonical council. This synchronizes their divine frequencies, outputting a composite, aligned PLT decision law across all worlds.
+            </p>
 
-            {equippedSkills.length === 0 ? (
-              <div className="py-8 text-center text-slate-500 font-mono text-xs">
-                No active skills equipped in the loadout. Equip custom tools under "Equip Skills Loadout" to analyze integration paths.
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {equippedSkills.map((skill) => {
-                  let requiredEnvKey = "GEMINI_API_KEY";
-                  switch (skill.id) {
-                    case "pinecone_retriever":
-                      requiredEnvKey = "PINECONE_API_KEY";
-                      break;
-                    case "slack_notifier":
-                      requiredEnvKey = "SLACK_WEBHOOK_URL";
-                      break;
-                    case "hubspot_crm":
-                      requiredEnvKey = "HUBSPOT_API_KEY";
-                      break;
-                    case "shopify_sync":
-                      requiredEnvKey = "SHOPIFY_ADMIN_ACCESS_TOKEN";
-                      break;
-                    case "solana_tracker":
-                      requiredEnvKey = "SOLANA_RPC_URL";
-                      break;
-                  }
+            <button
+              onClick={triggerGodMergeCeremony}
+              className="w-full py-2.5 bg-gradient-to-r from-orange-500/20 to-pink-500/20 hover:from-orange-500/30 hover:to-pink-500/30 border border-orange-500 text-orange-200 text-xs font-mono font-bold uppercase rounded-xl tracking-widest cursor-pointer transition"
+            >
+              🔥 CONVOCATE GOD-MERGE CEREMONY
+            </button>
 
-                  let isVerified = audit?.envKeys[requiredEnvKey] || false;
-                  if (!isVerified) {
-                    const savedVault = localStorage.getItem("agent_workbench_vault_keys");
-                    if (savedVault) {
-                      try {
-                        const keys = JSON.parse(savedVault);
-                        if (keys[requiredEnvKey] && keys[requiredEnvKey].trim() !== "") {
-                          isVerified = true;
-                        }
-                      } catch (e) {
-                        // quiet ignore
-                      }
-                    }
-                  }
-
-                  return (
-                    <div 
-                      key={skill.id}
-                      className="bg-slate-900/40 hover:bg-slate-900/70 border border-slate-850 p-3 rounded-lg flex items-center justify-between gap-3 group transition"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className={`p-1.5 rounded-md ${isVerified ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-500'}`}>
-                          <Cpu className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-mono font-bold text-slate-200">{skill.name}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-mono text-slate-500">
-                              Requires: <code className="text-rose-450">{requiredEnvKey}</code>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {isVerified ? (
-                          <div className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-900 text-emerald-400 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            PRODUCTION READY
-                          </div>
-                        ) : (
-                          <div className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-900 text-amber-400 flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-amber-400" />
-                            SIMULATOR FALLBACK
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() => triggerTestConnection(skill.id)}
-                          disabled={testingSkillId === skill.id}
-                          className="p-1 px-1.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-[10px] font-mono rounded cursor-pointer transition select-none disabled:opacity-50"
-                        >
-                          {testingSkillId === skill.id ? "PROBING..." : "TEST PROBE"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+            {ceremonyStatus && (
+              <div className="p-3 bg-slate-900 border border-slate-850 rounded-lg font-mono text-[10.5px] leading-relaxed text-slate-300 whitespace-pre-wrap">
+                {ceremonyStatus}
               </div>
             )}
           </div>
-
-          {/* Test connection report */}
-          {testResult && (
-            <motion.div 
-              initial={{ opacity: 0, y: 5 }} 
-              animate={{ opacity: 1, y: 0 }}
-              className={`border p-4.5 rounded-xl ${
-                testResult.status === "success" 
-                  ? "bg-emerald-950/30 border-emerald-900 text-emerald-100" 
-                  : "bg-rose-955/20 border-rose-900/60 text-rose-200"
-              }`}
-            >
-              <div className="flex items-start gap-2 text-xs">
-                {testResult.status === "success" ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                )}
-                <div className="space-y-1 w-full">
-                  <p className="font-semibold text-[13px]">
-                    {testResult.status === "success" ? "Channel Connection Live!" : "Simulated Backstop Warn-out"}
-                  </p>
-                  <p className="font-mono text-[11px] leading-relaxed break-all">
-                    {testResult.message}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
         </div>
 
-        {/* Right Column: Tailored .env block builder & deployment recipes */}
+        {/* Right Column: God Protocol Custom Creation Console */}
         <div className="lg:col-span-5 flex flex-col space-y-4">
-          <div className="bg-slate-950/60 border border-slate-850 rounded-xl p-4.5 flex-1 flex flex-col h-full">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5 border-b border-slate-905 pb-2 mb-3">
-              <FileCode className="w-3.5 h-3.5 text-amber-500" />
-              Tailored .env Production Key-Value
-            </h3>
+          <div className="bg-slate-950/40 border border-slate-850/80 p-5 rounded-xl flex-1 flex flex-col">
+            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block border-b border-slate-900 pb-2 mb-4">
+              Minor God Creator Console
+            </span>
 
-            <p className="text-[11px] text-slate-400 leading-normal mb-3.5">
-              Copy and inject these exact production key-value pairs into your hosting platform secrets (or local container `.env`) to seamlessly link equipped agents to external SaaS APIs!
-            </p>
+            <form onSubmit={handleAddGodNode} className="space-y-4 mb-5 flex-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-slate-500 font-mono uppercase mb-1">God Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={newGodName}
+                    onChange={(e) => setNewGodName(e.target.value)}
+                    placeholder="e.g. Chaos Anomaly"
+                    className="w-full bg-slate-900 border border-slate-800 focus:border-orange-500/50 text-xs rounded-lg px-2.5 py-1.5 outline-none font-mono text-slate-200"
+                  />
+                </div>
 
-            <div className="bg-slate-950 border border-slate-900 rounded-lg p-3 flex-1 flex flex-col min-h-[160px] overflow-hidden">
-              <div className="flex justify-between items-center text-[9px] font-mono text-slate-500 uppercase border-b border-slate-900 pb-1.5 mb-2 shrink-0">
-                <span>CONFIG DIRECTIVE: CUSTOMIZED ENV</span>
-                <span className="text-amber-500 animate-pulse">AUTOGENERATED</span>
+                <div>
+                  <label className="block text-[10px] text-slate-500 font-mono uppercase mb-1">Domain</label>
+                  <select
+                    value={newGodDomain}
+                    onChange={(e) => setNewGodDomain(e.target.value as any)}
+                    className="w-full bg-slate-900 border border-slate-800 text-xs rounded-lg px-2 py-1.5 outline-none text-slate-300"
+                  >
+                    <option value="Chaos">Chaos</option>
+                    <option value="Order">Order</option>
+                    <option value="War">War</option>
+                    <option value="Love">Love</option>
+                    <option value="Commerce">Commerce</option>
+                    <option value="Knowledge">Knowledge</option>
+                  </select>
+                </div>
               </div>
-              <pre className="font-mono text-[10.5px] leading-relaxed text-slate-300 overflow-y-auto overflow-x-auto flex-1 h-[220px] scrollbar-thin scrollbar-thumb-slate-800">
-{`# -----------------------------------------------------
-# Customized Production Variables for ${profile.name || "Custom Agent"}
-# -----------------------------------------------------
-GEMINI_API_KEY="AI_STUDIO_LIVE_KEY"
-APP_URL="${window.location.origin}"
 
-${equippedSkills.map(s => {
-  let binding = "";
-  switch (s.id) {
-    case "pinecone_retriever":
-      binding = `PINECONE_API_KEY="your-pinecone-db-pro-key"\nPINECONE_INDEX_HOST="${s.parameters.indexName || "agent-memory-index"}"`;
-      break;
-    case "slack_notifier":
-      binding = `SLACK_WEBHOOK_URL="https://hooks.slack.com/services/xxxx"`;
-      break;
-    case "hubspot_crm":
-      binding = `HUBSPOT_API_KEY="pat-na1-${s.parameters.apiKey || "HS_DEMO_KEY"}"`;
-      break;
-    case "shopify_sync":
-      binding = `SHOPIFY_ADMIN_ACCESS_TOKEN="shpat_xxxx_xxxx"\nSHOPIFY_STORE_URL="${s.parameters.storeUrl || "agent-merch.myshopify.com"}"`;
-      break;
-    case "solana_tracker":
-      binding = `SOLANA_RPC_URL="https://api.${s.parameters.rpcCluster || "mainnet-beta"}.solana.com"`;
-      break;
-    default:
-      binding = `# ${s.name} requires no custom secrets config.`;
-  }
-  return `# SLOT: ${s.name}\n${binding}\n`;
-}).join("\n")}
-`}
-              </pre>
-            </div>
+              <div className="space-y-3 bg-slate-950 p-3 rounded-lg border border-slate-900 font-mono text-[10.5px]">
+                <span className="text-[9px] text-slate-505 font-bold uppercase tracking-wider block mb-1">PLT Weight Composition</span>
+                <div>
+                  <div className="flex justify-between text-slate-400 mb-0.5">
+                    <span>PROFIT INFLUENCE:</span>
+                    <span className="text-cyan-400 font-bold">{(newGodProfit * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range" min="0" max="1" step="0.05" value={newGodProfit}
+                    onChange={(e) => setNewGodProfit(parseFloat(e.target.value))}
+                    className="w-full accent-cyan-500"
+                  />
+                </div>
 
-            <div className="mt-4 bg-slate-900/30 border border-slate-850 p-3 rounded-lg text-[10.5px] font-mono leading-relaxed text-slate-300">
-              <p className="font-semibold text-slate-200 flex items-center gap-1.5 mb-1.5">
-                <Server className="w-3.5 h-3.5 text-cyan-400" />
-                Continuous Deployment Tips
-              </p>
-              Under your system's <span className="text-pink-400 font-bold">Production Pipelines</span> tab, compile the autogenerated express bundle and launch. You can safely assign these variables to avoid all simulations.
+                <div>
+                  <div className="flex justify-between text-slate-400 mb-0.5">
+                    <span>LOVE INFLUENCE:</span>
+                    <span className="text-pink-400 font-bold">{(newGodLove * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range" min="0" max="1" step="0.05" value={newGodLove}
+                    onChange={(e) => setNewGodLove(parseFloat(e.target.value))}
+                    className="w-full accent-pink-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-slate-400 mb-0.5">
+                    <span>TAX INFLUENCE:</span>
+                    <span className="text-purple-400 font-bold">{(newGodTax * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range" min="0" max="1" step="0.05" value={newGodTax}
+                    onChange={(e) => setNewGodTax(parseFloat(e.target.value))}
+                    className="w-full accent-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono uppercase mb-1">Speech Style</label>
+                <input
+                  type="text"
+                  value={newGodStyle}
+                  onChange={(e) => setNewGodStyle(e.target.value)}
+                  placeholder="e.g. Speaks in digital glitches and code koans"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-orange-500/50 text-xs rounded-lg px-2.5 py-1.5 outline-none text-slate-200"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2 bg-orange-600 hover:bg-orange-500 border border-orange-500 rounded-lg text-xs font-mono font-bold text-white transition cursor-pointer"
+              >
+                + SYNTHESIZE DIVINE PROTOCOL NODE
+              </button>
+            </form>
+
+            <div className="border-t border-slate-900 pt-4 flex-1 overflow-y-auto max-h-[160px] scrollbar-thin">
+              <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block mb-2.5">
+                Active Minor Gods ({customGods.length})
+              </span>
+
+              {customGods.length === 0 ? (
+                <p className="text-[10px] text-slate-550 font-mono text-center py-4">No custom minor gods active in this universe.</p>
+              ) : (
+                <div className="space-y-2">
+                  {customGods.map(god => (
+                    <div key={god.id} className="bg-slate-950/60 border border-slate-900 p-2.5 rounded-lg flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-mono font-bold text-white uppercase">{god.name}</p>
+                        <p className="text-[9px] font-mono text-slate-505">Domain: {god.domain} | P:{god.pltWeights.profit} L:{god.pltWeights.love} T:{god.pltWeights.tax}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteGod(god.id)}
+                        className="p-1 text-slate-500 hover:text-red-400 font-mono text-[9px] uppercase cursor-pointer"
+                      >
+                        DE-ACTIVATE
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
