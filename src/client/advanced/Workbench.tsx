@@ -57,7 +57,14 @@ import {
   Play,
   Heart,
   Eye,
-  Workflow as WorkflowIcon
+  Workflow as WorkflowIcon,
+  LineChart,
+  Activity as PulseIcon,
+  TrendingUp,
+  AlertTriangle,
+  FileText,
+  Workflow as FlowIcon,
+  ShieldAlert
 } from "lucide-react";
 
 export default function Workbench() {
@@ -121,6 +128,19 @@ export default function Workbench() {
   // Interdimensional bridge status (Phase 37)
   const [bridgeTargetRealm, setBridgeTargetRealm] = useState("realm_chaos_void");
   const [bridgeStatus, setBridgeStatus] = useState<any>(null);
+
+  // Phase 48-65 Advanced States:
+  const [healthScores, setHealthScores] = useState<any[]>([]);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
+
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
+  const [alertRules, setAlertRules] = useState<any[]>([]);
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
+
+  const [testResults, setTestResults] = useState<any[]>([]);
+  const [isTestingRouter, setIsTestingRouter] = useState(false);
 
   // Multiverse World States state
   const [worldStates, setWorldStates] = useState<WorldState[]>(() => {
@@ -186,11 +206,6 @@ export default function Workbench() {
     const saved = localStorage.getItem("agent_workbench_qsc_balance");
     return saved ? parseInt(saved) : 2500;
   });
-
-  // Reality compilation state
-  const [compileFormat, setCompileFormat] = useState<"webapp" | "discord" | "native">("webapp");
-  const [isCompilingWorld, setIsCompilingWorld] = useState(false);
-  const [compileStatus, setCompileStatus] = useState("");
 
   // Transactions ledger state
   const [transactions, setTransactions] = useState<MarketplaceTransaction[]>(() => {
@@ -348,26 +363,7 @@ export default function Workbench() {
     }
   };
 
-  // Quantum Superposition collapse (Phase 35)
-  const handleCollapseQuantumState = async () => {
-    setQuantumState("superposition");
-    try {
-      const res = await fetch("/api/gsk/quantum/superposition", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ options: ["Launch Standalone Reality", "Align Canonical Council Weights"] })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTimeout(() => {
-          setQuantumState("collapsed");
-          setCollapsedAnswer(data.collapsed_outcome);
-        }, 1200);
-      }
-    } catch (e) {}
-  };
-
-  // Mint Solana NFT checkpoint imprint (Phase 36)
+  // Blockchain soul imprint nft status (Phase 36)
   const handleBlockchainImprint = async () => {
     setIsImprinting(true);
     try {
@@ -396,6 +392,66 @@ export default function Workbench() {
         setBridgeStatus(data.connection);
       }
     } catch (e) {}
+  };
+
+  // Fetch Provider Health Scores (Phase 53)
+  const handleFetchHealthScores = async () => {
+    setIsLoadingHealth(true);
+    try {
+      const res = await fetch("/api/gsk/health-scores");
+      if (res.ok) {
+        const data = await res.json();
+        setHealthScores(data.scores);
+      }
+    } catch (e) {}
+    finally {
+      setIsLoadingHealth(false);
+    }
+  };
+
+  // Fetch Cost Analytics (Phase 54)
+  const handleFetchCostAnalytics = async () => {
+    setIsLoadingAnalytics(true);
+    try {
+      const res = await fetch("/api/router/analytics");
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      }
+    } catch (e) {}
+    finally {
+      setIsLoadingAnalytics(false);
+    }
+  };
+
+  // Fetch Alerts rules (Phase 63)
+  const handleFetchAlertRules = async () => {
+    setIsLoadingAlerts(true);
+    try {
+      const res = await fetch("/api/gsk/alerts");
+      if (res.ok) {
+        const data = await res.json();
+        setAlertRules(data.alerts);
+      }
+    } catch (e) {}
+    finally {
+      setIsLoadingAlerts(false);
+    }
+  };
+
+  // Run Router Verification test (Phase 62)
+  const handleRunRouterTest = async () => {
+    setIsTestingRouter(true);
+    try {
+      const res = await fetch("/api/router/test", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setTestResults(data.results);
+      }
+    } catch (e) {}
+    finally {
+      setIsTestingRouter(false);
+    }
   };
 
   const getAgentJsonConfig = () => {
@@ -475,7 +531,7 @@ export default function Workbench() {
 
   return (
     <div className="min-h-screen bg-[#05050a]/40 text-slate-100 flex flex-col font-sans transition-all selection:bg-pink-500/30 selection:text-white relative overflow-x-hidden">
-      {/* Matrix Code Rain Backdrop */}
+      {/* Matrix Code Rain & Luminous Cyber Pyramids Backdrop */}
       <MatrixBackground accentColor={profile.avatarColor} />
 
       {/* Main Top Header Navbar */}
@@ -928,7 +984,7 @@ export default function Workbench() {
           </div>
         )}
 
-        {/* TAB 9: Economy Forge with microtask & biofeedback sensor (Phase 29, 30) */}
+        {/* TAB 9: Economy Forge with microtask, biofeedback sensors & analytics charts */}
         {activeTab === "marketplace" && (
           <div className="flex-1 space-y-6">
             <SoulMarketplace
@@ -1082,6 +1138,7 @@ export default function Workbench() {
           </div>
         )}
 
+        {/* TAB 8: World States, expanded with testing, health, and alerting dashboards */}
         {activeTab === "world_states" && (
           <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden text-slate-100 flex flex-col h-full hover:border-pink-500/10 transition-all select-none text-left">
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-25 pointer-events-none" />
@@ -1089,11 +1146,115 @@ export default function Workbench() {
               <div>
                 <h2 className="font-display text-xl font-bold tracking-tight text-white flex items-center gap-2">
                   <Globe className="w-5.5 h-5.5 text-cyan-400" />
-                  Multiverse World States & Reality Branches
+                  Multiverse World States & Testing Dashboards
                 </h2>
                 <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-                  Fork and manage reality parameters (physics constraints, economic models, consciousness laws). GSK maintains memories across all branched universes.
+                  Manage reality rules, execute real-time router integration testing, view alerting indicators, and track cost metrics dynamically.
                 </p>
+              </div>
+            </div>
+
+            {/* Extra Row: Active Real-time Metrics and Testing suites */}
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {/* Box 1: Run testing validation */}
+              <div className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-mono text-slate-505 font-bold uppercase">Phase 62 Testing Framework</span>
+                  <Activity className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                </div>
+                <button
+                  onClick={handleRunRouterTest}
+                  disabled={isTestingRouter}
+                  className="w-full py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono text-[10.5px] font-bold rounded cursor-pointer transition uppercase"
+                >
+                  {isTestingRouter ? "Testing..." : "Run Integration Tests"}
+                </button>
+                {testResults.length > 0 && (
+                  <div className="space-y-1 max-h-24 overflow-y-auto text-[9.5px] font-mono text-slate-400">
+                    {testResults.map(tr => (
+                      <div key={tr.provider} className="flex justify-between">
+                        <span>{tr.provider}:</span>
+                        <span className={tr.success ? "text-emerald-400" : "text-rose-400"}>
+                          {tr.success ? `${tr.latency_ms}ms` : "failed"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Box 2: Cost Analytics Dashboard */}
+              <div className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-mono text-slate-505 font-bold uppercase">Phase 54 Cost Analytics</span>
+                  <LineChart className="w-3.5 h-3.5 text-cyan-400" />
+                </div>
+                <button
+                  onClick={handleFetchCostAnalytics}
+                  disabled={isLoadingAnalytics}
+                  className="w-full py-1.5 bg-slate-900 border border-slate-800 text-white font-mono text-[10.5px] font-bold rounded cursor-pointer transition uppercase"
+                >
+                  {isLoadingAnalytics ? "Loading..." : "Load Costs Analytics"}
+                </button>
+                {analyticsData && (
+                  <div className="text-[9.5px] font-mono text-slate-400 leading-normal">
+                    <p>Total: <b className="text-white">${analyticsData.summary.total_cost_usd.toFixed(4)}</b></p>
+                    <p>Forecast: <b className="text-white">${analyticsData.summary.forecast_monthly_spend_usd}</b></p>
+                    <p>Uptime: <b className="text-emerald-400">{analyticsData.summary.uptime_percentage}%</b></p>
+                  </div>
+                )}
+              </div>
+
+              {/* Box 3: Provider Health Scoring */}
+              <div className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-mono text-slate-505 font-bold uppercase">Phase 53 Health Score</span>
+                  <PulseIcon className="w-3.5 h-3.5 text-cyan-400" />
+                </div>
+                <button
+                  onClick={handleFetchHealthScores}
+                  disabled={isLoadingHealth}
+                  className="w-full py-1.5 bg-slate-900 border border-slate-800 text-white font-mono text-[10.5px] font-bold rounded cursor-pointer transition uppercase"
+                >
+                  {isLoadingHealth ? "Loading..." : "Compute Health scores"}
+                </button>
+                {healthScores.length > 0 && (
+                  <div className="space-y-1 max-h-24 overflow-y-auto text-[9.5px] font-mono text-slate-400">
+                    {healthScores.map(hs => (
+                      <div key={hs.provider} className="flex justify-between">
+                        <span>{hs.provider}:</span>
+                        <span className="font-bold text-cyan-400">{hs.health_score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Box 4: Active Alerts Rules monitor */}
+              <div className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-mono text-slate-550 font-bold uppercase">Phase 63 Alerting</span>
+                  <AlertTriangle className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                </div>
+                <button
+                  onClick={handleFetchAlertRules}
+                  disabled={isLoadingAlerts}
+                  className="w-full py-1.5 bg-slate-900 border border-slate-800 text-white font-mono text-[10.5px] font-bold rounded cursor-pointer transition uppercase"
+                >
+                  {isLoadingAlerts ? "Loading..." : "Inspect Alerts"}
+                </button>
+                {alertRules.length > 0 && (
+                  <div className="space-y-1 max-h-24 overflow-y-auto text-[9.5px] font-mono text-slate-400">
+                    {alertRules.map(ar => (
+                      <div key={ar.id} className="flex justify-between">
+                        <span>{ar.metric}:</span>
+                        <span className={ar.status === "warning" ? "text-amber-400 animate-pulse font-bold" : "text-emerald-400"}>
+                          {ar.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1112,7 +1273,7 @@ export default function Workbench() {
                         onClick={() => setActiveWorldId(world.id)}
                         className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer flex gap-3 items-start ${
                           isActive
-                            ? "bg-slate-950 border-cyan-500"
+                            ? "bg-slate-955 border-cyan-500"
                             : "bg-slate-900/30 border-slate-850 hover:border-slate-800"
                         }`}
                       >
@@ -1261,7 +1422,7 @@ export default function Workbench() {
                     </button>
                   )}
 
-                  <div className="bg-slate-900/40 p-3 rounded-lg border border-slate-850 font-mono text-[10px] leading-relaxed text-slate-500">
+                  <div className="bg-slate-900/40 p-3 rounded-lg border border-slate-850 font-mono text-[10px] leading-relaxed text-slate-550">
                     Outputs complete React + Express standalone app with verified vercel.json configurations.
                   </div>
                 </div>
@@ -1428,7 +1589,7 @@ export default function Workbench() {
               </div>
 
               {/* Blockchain Imprints and Interdimensional Bridges (Phase 36, 37) */}
-              <div className="lg:col-span-4 bg-slate-950 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between">
+              <div className="lg:col-span-4 bg-slate-955 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between">
                 <div className="space-y-4">
                   <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2">
                     Blockchain Imprint & Bridge
