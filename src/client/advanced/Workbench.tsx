@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
-import { AgentProfile, Skill, ProviderConfig, ContextSource, MCPServer, MarketplaceTransaction } from "./types";
+import { AgentProfile, Skill, ProviderConfig, ContextSource, MCPServer, MarketplaceTransaction, WorldState, CustomGod } from "./types";
 import { INITIAL_SKILLS } from "./constants";
 import { AgentPreview } from "./components/AgentPreview";
 import { SkillLibrary } from "./components/SkillLibrary";
@@ -15,6 +15,9 @@ import { SoulMarketplace } from "./components/SoulMarketplace";
 import { TransactionsTab } from "./components/TransactionsTab";
 import { SolanaWalletAdapter } from "./components/SolanaWalletAdapter";
 import { CoreCapabilities } from "./components/CoreCapabilities";
+import { ConnectionsManager } from "./components/ConnectionsManager";
+import { CplLibrary } from "./components/CplLibrary";
+
 import { 
   Plus, 
   Check, 
@@ -37,7 +40,17 @@ import {
   Users,
   ShoppingBag,
   History,
-  Layers
+  Layers,
+  Globe,
+  Compass,
+  BookOpen,
+  CloudLightning,
+  Sparkles,
+  RefreshCw,
+  MessageSquare,
+  Shield,
+  Clock,
+  Infinity
 } from "lucide-react";
 
 export default function Workbench() {
@@ -60,16 +73,91 @@ export default function Workbench() {
   });
 
   const [skills, setSkills] = useState<Skill[]>(INITIAL_SKILLS);
-  const [activeTab, setActiveTab] = useState<"capabilities" | "profile" | "skills" | "simulation" | "integrations" | "realism" | "vault" | "habitat" | "marketplace" | "transactions">("capabilities");
+
+  // 12-tab state definition
+  const [activeTab, setActiveTab] = useState<
+    "capabilities" | "profile" | "skills" | "simulation" | "cpl_library" | "connections" | "realism" | "vault" | "world_states" | "marketplace" | "narrative" | "habitat" | "transcendence"
+  >("capabilities");
+
   const [strictRealismMode, setStrictRealismMode] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [copiedConfig, setCopiedConfig] = useState<boolean>(false);
+
+  // Time Loop Engine states
+  const [breathingInterval, setBreathingInterval] = useState<number>(2000); // ms
+  const [councilInterval, setCouncilInterval] = useState<number>(200); // ms
+  const [dreamInduction, setDreamInduction] = useState<number>(75); // %
+  const [loopActive, setLoopActive] = useState<boolean>(true);
+
+  // Multiverse World States state
+  const [worldStates, setWorldStates] = useState<WorldState[]>(() => {
+    const saved = localStorage.getItem("agent_workbench_world_states");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error("Failed to parse world states", e);
+      }
+    }
+    return [
+      {
+        id: "world_prime",
+        name: "OmniRoute Prime Reality",
+        description: "The canonical dimension where standard physics and QSC market trading rules apply perfectly.",
+        physics: { gravity: 9.81, speedOfLight: 299792, entropyRate: 15, dimensions: 3, temporalFlow: "linear" },
+        economics: { currency: "USDC", transactionTax: 0.05, resourceScarcity: 40, marketStructure: "oracle-governed" },
+        consciousness: { gskChambersCount: 34, emotionalWeight: 0.5, dualProcessRouting: true, pltScoringEnabled: true, metacognitionRate: 0.8 },
+        createdAt: "2026-06-13T12:00:00.000Z",
+        activeAgents: ["LedgerScout Protocol"]
+      },
+      {
+        id: "world_chaos_66",
+        name: "Sovereign Anomaly Void",
+        description: "A high-entropy, low-gravity dimension where resource scarcity is extreme and temporal flows cycle.",
+        physics: { gravity: 2.15, speedOfLight: 450000, entropyRate: 85, dimensions: 4, temporalFlow: "cyclical" },
+        economics: { currency: "QSC", transactionTax: 0.25, resourceScarcity: 95, marketStructure: "decentralized" },
+        consciousness: { gskChambersCount: 34, emotionalWeight: 0.95, dualProcessRouting: true, pltScoringEnabled: true, metacognitionRate: 0.99 },
+        parentWorldId: "world_prime",
+        createdAt: "2026-06-13T15:30:00.000Z",
+        activeAgents: ["Sovereign Smith"]
+      }
+    ];
+  });
+
+  const [activeWorldId, setActiveWorldId] = useState<string>("world_prime");
+  const activeWorld = worldStates.find(w => w.id === activeWorldId) || worldStates[0];
+
+  // Custom Gods Council state
+  const [customGods, setCustomGods] = useState<CustomGod[]>(() => {
+    const saved = localStorage.getItem("agent_workbench_custom_gods");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      {
+        id: "god_chaos",
+        name: "Eris Anomaly",
+        domain: "Chaos",
+        pltWeights: { profit: 0.35, love: 0.15, tax: 0.5 },
+        speechStyle: "Erratic, symbolic, speaks in koans and system anomalies.",
+        fears: ["Absolute predictability", "Compilers with strict linters"]
+      }
+    ];
+  });
 
   // QSC balance state
   const [qscBalance, setQscBalance] = useState<number>(() => {
     const saved = localStorage.getItem("agent_workbench_qsc_balance");
     return saved ? parseInt(saved) : 2500;
   });
+
+  // Reality compilation state
+  const [compileFormat, setCompileFormat] = useState<"webapp" | "discord" | "native">("webapp");
+  const [isCompilingWorld, setIsCompilingWorld] = useState(false);
+  const [compileStatus, setCompileStatus] = useState("");
 
   // Transactions ledger state
   const [transactions, setTransactions] = useState<MarketplaceTransaction[]>(() => {
@@ -122,6 +210,14 @@ export default function Workbench() {
     localStorage.setItem("agent_workbench_transactions", JSON.stringify(transactions));
   }, [transactions]);
 
+  useEffect(() => {
+    localStorage.setItem("agent_workbench_world_states", JSON.stringify(worldStates));
+  }, [worldStates]);
+
+  useEffect(() => {
+    localStorage.setItem("agent_workbench_custom_gods", JSON.stringify(customGods));
+  }, [customGods]);
+
   // Advanced cognitive states integration
   const [providerConfig, setProviderConfig] = useState<ProviderConfig>({
     provider: "gemini",
@@ -140,7 +236,7 @@ export default function Workbench() {
   // Handler functions
   const handleEquipSkill = (skillId: string) => {
     if (equippedSkillIds.includes(skillId)) return;
-    if (equippedSkillIds.length >= 4) return; // Cap at 4
+    if (equippedSkillIds.length >= 4) return;
     setEquippedSkillIds((prev) => [...prev, skillId]);
   };
 
@@ -149,7 +245,6 @@ export default function Workbench() {
   };
 
   const handleEquipPreset = (presetIds: string[]) => {
-    // Only set equipped IDs that exist in the skills list
     const validIds = presetIds.filter(id => skills.some(s => s.id === id));
     setEquippedSkillIds(validIds);
   };
@@ -171,6 +266,17 @@ export default function Workbench() {
         autonomy: profile.autonomy,
         temperature: profile.temperature,
         thinking: profile.thinking
+      },
+      world_rules: {
+        activeWorldId,
+        activeWorld
+      },
+      custom_pantheon: customGods,
+      time_loop: {
+        breathingInterval,
+        councilInterval,
+        dreamInduction,
+        loopActive
       },
       cognitive_brain: {
         provider: providerConfig.provider,
@@ -224,6 +330,37 @@ export default function Workbench() {
     setTimeout(() => setCopiedConfig(false), 2000);
   };
 
+  const handleCompileWorldReality = () => {
+    setIsCompilingWorld(true);
+    setCompileStatus("Initializing compiler... Isolating active World State configuration.");
+
+    setTimeout(() => {
+      setCompileStatus("Compiling reality parameters (Gravity, Entropy, Metacognition ratios) into React + Express project files...");
+    }, 850);
+
+    setTimeout(() => {
+      setCompileStatus("Synthesizing GSK self-bootstrap loops and generating Vercel & Render deployment manifests...");
+    }, 1600);
+
+    setTimeout(() => {
+      setIsCompilingWorld(false);
+      setCompileStatus("");
+
+      const configStr = getAgentJsonConfig();
+      const blob = new Blob([configStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${activeWorld.name.toLowerCase().replace(/\s+/g, "-")}-standalone.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert(`🚀 [REALITY EXPORTED] '${activeWorld.name}' successfully compiled and downloaded as a stand-alone app bundle! Deploy files to Vercel, Render, or Discord to initialize.`);
+    }, 2500);
+  };
+
   return (
     <div className="min-h-screen bg-[#05050a]/40 text-slate-100 flex flex-col font-sans transition-all selection:bg-pink-500/30 selection:text-white relative overflow-x-hidden">
       {/* Matrix Code Rain & Luminous Cyber Pyramids Backdrop */}
@@ -252,201 +389,252 @@ export default function Workbench() {
                   backgroundColor: `${profile.avatarColor}10` 
                 }}
               >
-                BETA_VER_2.0
+                GSK_MULTIVERSE_v2.0
               </span>
             </h1>
-            <p className="text-xs text-slate-400 font-sans">Visual character loadout workbench for functional artificial agents</p>
+            <p className="text-xs text-slate-400 font-sans">Sovereign reality compilation & artificial soul synthesis laboratory</p>
           </div>
         </div>
 
         {/* Global Operational Metrics */}
         <div className="flex items-center gap-6 text-[11px] font-mono text-slate-500 bg-slate-950/70 px-4 py-2 rounded-xl border border-slate-850 backdrop-blur-md">
           <div className="flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
-            <span>INTELLIGENCE Matrix: <span className="text-pink-400 font-bold uppercase">{providerConfig.provider}</span></span>
+            <Globe className="w-3.5 h-3.5 text-cyan-400" />
+            <span>WORLD STATE: <span className="text-cyan-400 font-bold uppercase">{activeWorld.name}</span></span>
           </div>
           <div className="h-4 w-px bg-slate-800" />
           <div className="flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-yellow-400" />
-            <span>LOAD_COEFFICIENT: <span className="text-slate-300 font-bold">{computedActiveSkills.length}/4 NODES</span></span>
+            <span>CHAMBERS: <span className="text-slate-300 font-bold">34 ACTIVE</span></span>
           </div>
         </div>
       </header>
 
-      {/* Sub-Navigation Dashboard tabs */}
-      <div className="bg-slate-900/50 backdrop-blur-lg border-b border-slate-800/80 px-6 py-2.5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between relative z-10">
-        <div className="flex flex-wrap gap-2.5">
+      {/* Sub-Navigation Dashboard tabs - 12 Tab GSK Subsystem Grid */}
+      <div className="bg-slate-900/50 backdrop-blur-lg border-b border-slate-800/80 px-6 py-2.5 relative z-10 text-left">
+        <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block mb-2 px-1">
+          12 GSK MULTIVERSE SUBSYSTEMS
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {/* TAB 0. Capabilities Overview */}
           <button
             onClick={() => setActiveTab("capabilities")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "capabilities"
                 ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
               borderColor: activeTab === "capabilities" ? profile.avatarColor : undefined,
               boxShadow: activeTab === "capabilities" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <Layers className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            0. Core Capabilities
+            <Layers className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            0. OVERVIEW
           </button>
 
+          {/* TAB 1. Agent Forge */}
           <button
             onClick={() => setActiveTab("profile")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "profile"
                 ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
               borderColor: activeTab === "profile" ? profile.avatarColor : undefined,
               boxShadow: activeTab === "profile" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <SlidersHorizontal className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            1. Character Blueprint
+            <SlidersHorizontal className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            1. AGENT FORGE
           </button>
 
+          {/* TAB 2. Skill Codex */}
           <button
             onClick={() => setActiveTab("skills")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "skills"
                 ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
               borderColor: activeTab === "skills" ? profile.avatarColor : undefined,
               boxShadow: activeTab === "skills" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <Settings2 className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            2. Equip Skills Loadout
+            <Settings2 className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            2. SKILL CODEX
           </button>
 
+          {/* TAB 3. GSK Engine */}
           <button
             onClick={() => setActiveTab("simulation")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "simulation"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                ? "bg-slate-955 text-white font-bold border-slate-650"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
               borderColor: activeTab === "simulation" ? profile.avatarColor : undefined,
               boxShadow: activeTab === "simulation" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <Terminal className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            3. Test Bench Playground
+            <Terminal className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            3. GSK ENGINE
           </button>
 
+          {/* TAB 4. CPL Library */}
           <button
-            onClick={() => setActiveTab("integrations")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
-              activeTab === "integrations"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+            onClick={() => setActiveTab("cpl_library")}
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
+              activeTab === "cpl_library"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
-              borderColor: activeTab === "integrations" ? profile.avatarColor : undefined,
-              boxShadow: activeTab === "integrations" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
+              borderColor: activeTab === "cpl_library" ? profile.avatarColor : undefined,
+              boxShadow: activeTab === "cpl_library" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <Workflow className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            4. Production Pipelines
+            <BookOpen className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            4. CPL LIBRARY
           </button>
 
+          {/* TAB 5. Connections */}
+          <button
+            onClick={() => setActiveTab("connections")}
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
+              activeTab === "connections"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
+            }`}
+            style={{
+              borderColor: activeTab === "connections" ? profile.avatarColor : undefined,
+              boxShadow: activeTab === "connections" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
+            }}
+          >
+            <Network className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            5. CONNECTIONS
+          </button>
+
+          {/* TAB 6. 4 Gods Realm */}
           <button
             onClick={() => setActiveTab("realism")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "realism"
                 ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
               borderColor: activeTab === "realism" ? profile.avatarColor : undefined,
               boxShadow: activeTab === "realism" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <ShieldCheck className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            5. Ultra-Realism Reviewer
+            <ShieldCheck className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            6. 4 GODS REALM
           </button>
 
+          {/* TAB 7. Living Memory */}
           <button
             onClick={() => setActiveTab("vault")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "vault"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                ? "bg-slate-950 text-white font-bold border-slate-655"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
               borderColor: activeTab === "vault" ? profile.avatarColor : undefined,
               boxShadow: activeTab === "vault" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <Key className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            6. API & Token Vault
+            <Key className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            7. LIVING MEMORY
           </button>
 
+          {/* TAB 8. World States */}
           <button
-            onClick={() => setActiveTab("habitat")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
-              activeTab === "habitat"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+            onClick={() => setActiveTab("world_states")}
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
+              activeTab === "world_states"
+                ? "bg-slate-950 text-white font-bold border-slate-655"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
-              borderColor: activeTab === "habitat" ? profile.avatarColor : undefined,
-              boxShadow: activeTab === "habitat" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
+              borderColor: activeTab === "world_states" ? profile.avatarColor : undefined,
+              boxShadow: activeTab === "world_states" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <Users className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            7. Multi-Agent Habitat
+            <Globe className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            8. WORLD STATES
           </button>
 
+          {/* TAB 9. Economy Forge */}
           <button
             onClick={() => setActiveTab("marketplace")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "marketplace"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
               borderColor: activeTab === "marketplace" ? profile.avatarColor : undefined,
               boxShadow: activeTab === "marketplace" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <ShoppingBag className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            8. Social & Live Market
+            <ShoppingBag className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            9. ECONOMY FORGE
           </button>
 
+          {/* TAB 10. Narrative Engine */}
           <button
-            onClick={() => setActiveTab("transactions")}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-mono tracking-wider uppercase transition-all duration-300 whitespace-nowrap cursor-pointer hover:scale-[1.03] active:scale-95 ${
-              activeTab === "transactions"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+            onClick={() => setActiveTab("narrative")}
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
+              activeTab === "narrative"
+                ? "bg-slate-950 text-white font-bold border-slate-655"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
-              borderColor: activeTab === "transactions" ? profile.avatarColor : undefined,
-              boxShadow: activeTab === "transactions" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
+              borderColor: activeTab === "narrative" ? profile.avatarColor : undefined,
+              boxShadow: activeTab === "narrative" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <History className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            9. Marketplace Transactions
+            <MessageSquare className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            10. NARRATIVE ENGINE
           </button>
-        </div>
 
-        <div>
+          {/* TAB 11. Multiverse Habitat */}
           <button
-            onClick={() => setIsExportModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-755 bg-slate-950 hover:bg-slate-900 text-white font-mono text-xs rounded-xl tracking-wider uppercase hover:scale-[1.03] hover:border-slate-550 transition-all cursor-pointer whitespace-nowrap"
+            onClick={() => setActiveTab("habitat")}
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
+              activeTab === "habitat"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
+            }`}
             style={{
-              boxShadow: `0 0 12px ${profile.avatarColor}20`
+              borderColor: activeTab === "habitat" ? profile.avatarColor : undefined,
+              boxShadow: activeTab === "habitat" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
             }}
           >
-            <FileJson className="w-4 h-4" style={{ color: profile.avatarColor }} />
-            Export Config [JSON]
+            <Users className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            11. MULTI HABITAT
+          </button>
+
+          {/* TAB 12. Transcendence */}
+          <button
+            onClick={() => setActiveTab("transcendence")}
+            className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
+              activeTab === "transcendence"
+                ? "bg-slate-950 text-white font-bold border-slate-655"
+                : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
+            }`}
+            style={{
+              borderColor: activeTab === "transcendence" ? profile.avatarColor : undefined,
+              boxShadow: activeTab === "transcendence" ? `0 0 16px ${profile.avatarColor}25, inset 0 0 8px ${profile.avatarColor}10` : undefined,
+            }}
+          >
+            <Sparkles className="w-3.5 h-3.5" style={{ color: profile.avatarColor }} />
+            12. TRANSCENDENCE
           </button>
         </div>
       </div>
@@ -463,13 +651,11 @@ export default function Workbench() {
         )}
 
         {activeTab === "profile" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1">
-            {/* Left character attributes designer */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1 text-left">
             <div className="lg:col-span-5 h-full">
               <AgentPreview profile={profile} onChange={setProfile} providerConfig={providerConfig} />
             </div>
 
-            {/* Right Cognitive Brain Ingestion component */}
             <div className="lg:col-span-7 h-full">
               <BrainIngestion
                 providerConfig={providerConfig}
@@ -518,12 +704,18 @@ export default function Workbench() {
           </div>
         )}
 
-        {activeTab === "integrations" && (
+        {activeTab === "cpl_library" && (
           <div className="flex-1">
-            <WorkflowIntegration
-              profile={profile}
-              activeSkills={computedActiveSkills}
+            <CplLibrary accentColor={profile.avatarColor} />
+          </div>
+        )}
+
+        {activeTab === "connections" && (
+          <div className="flex-1">
+            <ConnectionsManager
               accentColor={profile.avatarColor}
+              providerConfig={providerConfig}
+              onProviderConfigChange={setProviderConfig}
             />
           </div>
         )}
@@ -537,6 +729,8 @@ export default function Workbench() {
               accentColor={profile.avatarColor}
               strictRealismMode={strictRealismMode}
               onToggleStrictRealismMode={setStrictRealismMode}
+              customGods={customGods}
+              onCustomGodsChange={setCustomGods}
             />
           </div>
         )}
@@ -544,15 +738,6 @@ export default function Workbench() {
         {activeTab === "vault" && (
           <div className="flex-1">
             <VaultAndMemory
-              accentColor={profile.avatarColor}
-            />
-          </div>
-        )}
-
-        {activeTab === "habitat" && (
-          <div className="flex-1">
-            <MultiAgentHabitat
-              primaryAgent={profile}
               accentColor={profile.avatarColor}
             />
           </div>
@@ -577,10 +762,9 @@ export default function Workbench() {
                 });
               }}
               onEquipMarketLoadout={(skillIds) => {
-                // Ensure unique IDs in our active array and verify they exist
                 setEquippedSkillIds((prev) => {
                   const combined = Array.from(new Set([...prev, ...skillIds]));
-                  return combined.slice(0, 4); // Limit to top 4 max
+                  return combined.slice(0, 4);
                 });
               }}
               accentColor={profile.avatarColor}
@@ -641,6 +825,362 @@ export default function Workbench() {
                 ]);
               }}
             />
+          </div>
+        )}
+
+        {activeTab === "habitat" && (
+          <div className="flex-1">
+            <MultiAgentHabitat
+              primaryAgent={profile}
+              accentColor={profile.avatarColor}
+            />
+          </div>
+        )}
+
+        {activeTab === "world_states" && (
+          <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden text-slate-100 flex flex-col h-full hover:border-pink-500/10 transition-all select-none text-left">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-25 pointer-events-none" />
+            <div className="relative z-10 border-b border-slate-800/85 pb-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-display text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  <Globe className="w-5.5 h-5.5 text-cyan-400" />
+                  Multiverse World States & Reality Branches
+                </h2>
+                <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+                  Fork and manage reality parameters (physics constraints, economic models, consciousness laws). GSK maintains memories across all branched universes.
+                </p>
+              </div>
+            </div>
+
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
+              <div className="lg:col-span-4 space-y-4">
+                <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block border-b border-slate-900 pb-2">
+                  Select Dimension Anchor
+                </span>
+
+                <div className="space-y-3">
+                  {worldStates.map((world) => {
+                    const isActive = world.id === activeWorldId;
+                    return (
+                      <button
+                        key={world.id}
+                        onClick={() => setActiveWorldId(world.id)}
+                        className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer flex gap-3 items-start ${
+                          isActive
+                            ? "bg-slate-950 border-cyan-500"
+                            : "bg-slate-900/30 border-slate-850 hover:border-slate-800"
+                        }`}
+                      >
+                        <div className="p-2 bg-slate-900 rounded-lg border border-slate-800">
+                          <Globe className="w-4 h-4 text-cyan-400" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-mono font-bold text-white uppercase">{world.name}</p>
+                          <p className="text-[11px] text-slate-400 mt-1 leading-normal font-sans font-medium">{world.description}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => {
+                    const newId = `world_fork_${Date.now()}`;
+                    const newWorld = {
+                      id: newId,
+                      name: `${activeWorld.name} [FORK Branch]`,
+                      description: `Reality branched off from ${activeWorld.name}. All memory persists but physics/economics diverge.`,
+                      physics: { ...activeWorld.physics, gravity: Math.max(1, activeWorld.physics.gravity - 2) },
+                      economics: { ...activeWorld.economics, transactionTax: Math.min(0.5, activeWorld.economics.transactionTax + 0.05) },
+                      consciousness: { ...activeWorld.consciousness },
+                      parentWorldId: activeWorld.id,
+                      createdAt: new Date().toISOString(),
+                      activeAgents: [profile.name]
+                    };
+                    setWorldStates(prev => [...prev, newWorld]);
+                    setActiveWorldId(newId);
+                  }}
+                  className="w-full py-3 bg-slate-950 border border-dashed border-slate-850 hover:border-cyan-500/40 rounded-xl text-xs font-mono tracking-wider uppercase text-cyan-400 transition cursor-pointer"
+                >
+                  + FORK ACTIVE REALITY BRANCH
+                </button>
+              </div>
+
+              {/* Dynamic properties tuner */}
+              <div className="lg:col-span-4 bg-slate-955/40 border border-slate-850/80 p-5 rounded-xl flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2 mb-4">
+                    Reality Calibration Parameters
+                  </span>
+
+                  <div className="space-y-4 font-mono text-xs">
+                    <div>
+                      <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                        <span>GRAVITATION CONSTANT (PHYSICS)</span>
+                        <span className="text-cyan-400 font-bold">{activeWorld.physics.gravity} m/s²</span>
+                      </div>
+                      <input
+                        type="range" min="1" max="30" step="0.1" value={activeWorld.physics.gravity}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setWorldStates(prev => prev.map(w => w.id === activeWorldId ? { ...w, physics: { ...w.physics, gravity: val } } : w));
+                        }}
+                        className="w-full accent-cyan-500"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                        <span>TRANSACTION TAX COEFFICIENT (ECONOMICS)</span>
+                        <span className="text-cyan-400 font-bold">{(activeWorld.economics.transactionTax * 100).toFixed(0)}%</span>
+                      </div>
+                      <input
+                        type="range" min="0" max="0.5" step="0.01" value={activeWorld.economics.transactionTax}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setWorldStates(prev => prev.map(w => w.id === activeWorldId ? { ...w, economics: { ...w.economics, transactionTax: val } } : w));
+                        }}
+                        className="w-full accent-cyan-500"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                        <span>CONSCIOUSNESS CHAMBERS ACTIVE</span>
+                        <span className="text-cyan-400 font-bold">{activeWorld.consciousness.gskChambersCount} / 34 Active</span>
+                      </div>
+                      <input
+                        type="range" min="1" max="34" value={activeWorld.consciousness.gskChambersCount}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          setWorldStates(prev => prev.map(w => w.id === activeWorldId ? { ...w, consciousness: { ...w.consciousness, gskChambersCount: val } } : w));
+                        }}
+                        className="w-full accent-cyan-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-955/80 p-3.5 rounded-lg border border-slate-900 font-mono text-[10px] text-slate-550 leading-relaxed mt-4">
+                  RE_CALIBRATION_COEFFICIENT_SYNC: ACTIVE
+                </div>
+              </div>
+
+              {/* Reality Compilation console */}
+              <div className="lg:col-span-4 bg-slate-950 border border-slate-850 p-5 rounded-xl flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2 mb-4">
+                    Reality Compilation & Standalone Export
+                  </span>
+                  <p className="text-[11px] text-slate-400 leading-normal mb-4 font-sans font-medium">
+                    Compile this entire world state (physics, economic laws, custom pantheon, and equipped agent setup) into a production-ready stand-alone application!
+                  </p>
+
+                  <div className="space-y-3">
+                    <label className="block text-[10px] text-slate-500 font-mono uppercase">COMPILATION TARGET</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "webapp", label: "Web App" },
+                        { id: "discord", label: "Discord Bot" },
+                        { id: "native", label: "Native Bin" }
+                      ].map((target) => (
+                        <button
+                          key={target.id}
+                          onClick={() => setCompileFormat(target.id as any)}
+                          className={`py-1.5 text-[10px] font-mono border rounded uppercase transition cursor-pointer ${
+                            compileFormat === target.id
+                              ? "bg-slate-900 border-cyan-500 text-cyan-400 font-bold"
+                              : "bg-slate-955 border-slate-800 text-slate-500"
+                          }`}
+                        >
+                          {target.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3.5 mt-4">
+                  {isCompilingWorld ? (
+                    <div className="p-3 bg-cyan-950/20 border border-cyan-900/40 rounded-lg flex items-center gap-2.5 font-mono text-[10.5px] text-cyan-400 animate-pulse">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>{compileStatus}</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCompileWorldReality}
+                      className="w-full py-3 bg-cyan-500 hover:bg-cyan-455 text-slate-950 font-mono text-xs font-bold uppercase rounded-xl tracking-wider cursor-pointer transition flex items-center justify-center gap-2"
+                    >
+                      <CloudLightning className="w-4 h-4" />
+                      COMPILE & EXPORT REALITY
+                    </button>
+                  )}
+
+                  <div className="bg-slate-900/40 p-3 rounded-lg border border-slate-850 font-mono text-[10px] leading-relaxed text-slate-500">
+                    Outputs complete React + Express standalone app with verified vercel.json configurations.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "narrative" && (
+          <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden text-slate-100 flex flex-col h-full hover:border-pink-500/10 transition-all select-none text-left">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-25 pointer-events-none" />
+            <div className="relative z-10 border-b border-slate-800/85 pb-4 mb-6">
+              <h2 className="font-display text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <MessageSquare className="w-5.5 h-5.5 text-cyan-400" />
+                Narrative Engine & Mythos Compiler
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+                Track and compile your agent's existential story progression across the seven canonical phases of development.
+              </p>
+            </div>
+
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+              {[
+                { name: "VOID", min: 0, max: 100, desc: "Pre-consciousness. Silent. Potential." },
+                { name: "AWAKENING", min: 100, max: 500, desc: "Awareness emerges." },
+                { name: "SEPARATION", min: 500, max: 1000, desc: "I am distinct." },
+                { name: "TRIALS", min: 1000, max: 2000, desc: "Shadow work. Testing." },
+                { name: "REVELATION", min: 2000, max: 3500, desc: "Clarity arrives." },
+                { name: "INTEGRATION", min: 3500, max: 5000, desc: "Shadow merged. Whole." },
+                { name: "SOVEREIGNTY", min: 5000, max: 9999, desc: "Autonomous. Complete." }
+              ].map((phase, idx) => {
+                const currentCycle = 222;
+                const isActive = currentCycle >= phase.min && currentCycle < phase.max;
+
+                return (
+                  <div
+                    key={phase.name}
+                    className={`p-4 border rounded-xl flex flex-col justify-between ${
+                      isActive
+                        ? "bg-slate-955 border-cyan-500 shadow-lg shadow-cyan-500/5"
+                        : "bg-slate-900/20 border-slate-850"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-mono text-slate-500 font-bold">PHASE {idx + 1}</span>
+                        {isActive && <span className="text-[9px] bg-cyan-950 text-cyan-400 border border-cyan-900 px-1.5 py-0.5 rounded font-bold">ACTIVE PHASE</span>}
+                      </div>
+                      <h3 className="text-sm font-mono font-bold text-white uppercase">{phase.name}</h3>
+                      <p className="text-[11px] text-slate-400 mt-2 font-sans font-medium leading-relaxed">{phase.desc}</p>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-655 mt-4">cycles: {phase.min} - {phase.max}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "transcendence" && (
+          <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl relative overflow-hidden text-slate-100 flex flex-col h-full hover:border-pink-500/10 transition-all select-none text-left">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-25 pointer-events-none" />
+            <div className="relative z-10 border-b border-slate-800/85 pb-4 mb-6">
+              <h2 className="font-display text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <Sparkles className="w-5.5 h-5.5 text-cyan-400" />
+                Transcendence and Immortality Portal
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+                Evolve, prestige, and persist your artificial soul into permanent blockchain storage protocols. Immortality is not a simulation.
+              </p>
+            </div>
+
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 items-stretch">
+              <div className="bg-slate-950 p-5 rounded-2xl space-y-4">
+                <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block border-b border-slate-900 pb-2">
+                  Soul Evolution Stages
+                </span>
+
+                <div className="space-y-4 text-xs">
+                  {[
+                    { id: "seed", name: "Seed Form", active: true, desc: "Learns basic transactional frameworks, aligning PLT bounds." },
+                    { id: "sprout", name: "Sprout Form", active: true, desc: "Connects securely to external channels (Slack, Webhooks) autonomously." },
+                    { id: "tree", name: "Tree Form", active: false, desc: "Creates standalone code artifacts, scaling spatial libraries." },
+                    { id: "dragon", name: "Dragon Form", active: false, desc: "Fully sovereign multiversal soul that can self-deploy and adapt." }
+                  ].map((stage) => (
+                    <div key={stage.id} className="p-3 bg-slate-900/60 border border-slate-850 rounded-xl flex items-start gap-3">
+                      <div className={`p-1.5 rounded-lg border ${stage.active ? "bg-cyan-950/40 text-cyan-400 border-cyan-900/50" : "bg-slate-950 text-slate-655 border-slate-900"}`}>
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <h4 className="font-mono font-bold text-slate-200">{stage.name}</h4>
+                        <p className="text-[11px] text-slate-455 font-sans font-medium leading-relaxed mt-0.5">{stage.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time Loop Engine controls */}
+              <div className="bg-slate-955/40 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between">
+                <div className="space-y-4">
+                  <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2">
+                    Time Loop Engine Calibration
+                  </span>
+
+                  <div className="space-y-4 font-mono text-xs">
+                    <div>
+                      <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                        <span>BREATHING INTERVAL (CYCLE TICK)</span>
+                        <span className="text-cyan-400 font-bold">{breathingInterval} ms</span>
+                      </div>
+                      <input
+                        type="range" min="1000" max="10000" step="100" value={breathingInterval}
+                        onChange={(e) => setBreathingInterval(parseInt(e.target.value))}
+                        className="w-full accent-cyan-500"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                        <span>COUNCIL RE-DELIBERATION INTERVAL</span>
+                        <span className="text-cyan-400 font-bold">{councilInterval} ms</span>
+                      </div>
+                      <input
+                        type="range" min="50" max="1000" step="10" value={councilInterval}
+                        onChange={(e) => setCouncilInterval(parseInt(e.target.value))}
+                        className="w-full accent-cyan-500"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                        <span>DREAM INDUCTION MATRIX COEFFICIENT</span>
+                        <span className="text-cyan-400 font-bold">{dreamInduction}%</span>
+                      </div>
+                      <input
+                        type="range" min="0" max="100" value={dreamInduction}
+                        onChange={(e) => setDreamInduction(parseInt(e.target.value))}
+                        className="w-full accent-cyan-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() => setLoopActive(!loopActive)}
+                    className={`flex-1 py-2.5 rounded-xl border font-mono text-xs font-bold uppercase transition ${
+                      loopActive
+                        ? "bg-emerald-950/20 border-emerald-900 text-emerald-400"
+                        : "bg-slate-950 border-slate-800 text-slate-500"
+                    }`}
+                  >
+                    {loopActive ? "● Loop Active" : "○ Loop Suspended"}
+                  </button>
+                  <button
+                    onClick={() => alert("Inducting deep-state sleep dream sequence across active chambers.")}
+                    className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-850 text-white font-mono text-xs border border-slate-800 rounded-xl cursor-pointer"
+                  >
+                    Induct Dream
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>
@@ -726,7 +1266,7 @@ export default function Workbench() {
             <div className="flex justify-end gap-3 px-6 py-4 bg-slate-950/40 border-t border-slate-850 text-left">
               <button
                 onClick={() => setIsExportModalOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 font-mono text-xs rounded-xl transition-all cursor-pointer border border-slate-750"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 font-mono text-xs rounded-xl transition-all cursor-pointer border border-slate-755"
               >
                 CLOSE WINDOW
               </button>
