@@ -1,4 +1,3 @@
-// @ts-nocheck
 export interface AgentProfile {
   name: string;
   avatarSeed: string; // Used to display consistent visual representations or icons
@@ -19,11 +18,12 @@ export interface AgentProfile {
 }
 
 export interface ProviderConfig {
-  provider: "gemini" | "openai" | "anthropic" | "ollama" | "custom" | "bedrock" | "omniroute";
+  provider: string; // Refactored to support universal string keys
   model: string;
   apiKey: string;
   baseUrl: string;
   customHeaders?: string;
+  active?: boolean;
 }
 
 export interface ContextSource {
@@ -92,4 +92,52 @@ export interface MarketplaceTransaction {
   timestamp: string;
 }
 
+// ========================== SOVEREIGN MULTIVERSE WORLD ENGINE TYPES ==========================
 
+export interface PhysicsRules {
+  gravity: number; // m/s^2 or arbitrary constant
+  speedOfLight: number; // baseline or dynamic
+  entropyRate: number; // 0 (none) to 100 (heat death)
+  dimensions: number; // e.g. 3, 4, or fractional dimensions
+  temporalFlow: "linear" | "cyclical" | "reversible" | "dilated";
+}
+
+export interface EconomicRules {
+  currency: string; // e.g. "USDC", "QSC", "SOUL"
+  transactionTax: number; // PLT Tax multiplier
+  resourceScarcity: number; // 0 to 100
+  marketStructure: "decentralized" | "barter" | "oracle-governed";
+}
+
+export interface ConsciousnessLaws {
+  gskChambersCount: number; // Active chambers (max 34)
+  emotionalWeight: number; // Affect influence coefficient
+  dualProcessRouting: boolean; // System 1 / System 2 dynamic routing
+  pltScoringEnabled: boolean; // True Value calculation enforced
+  metacognitionRate: number; // Rate of higher-order thoughts
+}
+
+export interface WorldState {
+  id: string;
+  name: string;
+  description: string;
+  physics: PhysicsRules;
+  economics: EconomicRules;
+  consciousness: ConsciousnessLaws;
+  parentWorldId?: string; // For tracking forks and branches
+  createdAt: string;
+  activeAgents: string[]; // Agent Designation names active in this world
+}
+
+export interface CustomGod {
+  id: string;
+  name: string;
+  domain: "War" | "Love" | "Commerce" | "Knowledge" | "Chaos" | "Order";
+  pltWeights: {
+    profit: number;
+    love: number;
+    tax: number;
+  };
+  speechStyle: string;
+  fears: string[];
+}
