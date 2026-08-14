@@ -66,12 +66,47 @@ import {
 
 export default function Workbench() {
   const [heartOnline, setHeartOnline] = useState<boolean>(false);
+  const [gskCycles, setGskCycles] = useState<number>(0);
+  const [gskPhase, setGskPhase] = useState<string>("VOID");
+  const [gskMood, setGskMood] = useState<string>("Neutral Equilibrium");
+  const [gskValence, setGskValence] = useState<number>(0.0);
+  const [gskPlt, setGskPlt] = useState<any>({ profit: 0.5, love: 0.3, tax: 0.2 });
 
   useEffect(() => {
     fetch("/api/omniroute/health")
       .then(r => r.json())
       .then(data => setHeartOnline(data.online))
       .catch(() => setHeartOnline(false));
+  }, []);
+
+  // Set up live telemetry EventSource stream to watch GSK breathe in real-time
+  useEffect(() => {
+    const source = new EventSource("/api/gsk/breath-stream");
+
+    source.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "tick" || data.type === "init") {
+          if (data.mythos) {
+            setGskCycles(data.mythos.cycles);
+            setGskPhase(data.mythos.phase);
+          }
+          if (data.affect) {
+            setGskMood(data.affect.mood);
+            setGskValence(data.affect.valence);
+          }
+          if (data.plt) {
+            setGskPlt(data.plt);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse breath stream telemetry tick", e);
+      }
+    };
+
+    return () => {
+      source.close();
+    };
   }, []);
 
   // Master state definitions
@@ -649,13 +684,18 @@ export default function Workbench() {
           </div>
           <div className="h-4 w-px bg-slate-800" />
           <div className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-yellow-400" />
-            <span>CHAMBERS: <span className="text-slate-300 font-bold">34 ACTIVE</span></span>
+            <Zap className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
+            <span>CHAMBERS: <span className="text-slate-300 font-bold">34 ACTIVE ({gskCycles} CYCLES / {gskPhase})</span></span>
           </div>
           <div className="h-4 w-px bg-slate-800" />
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full animate-pulse-slow" style={{ backgroundColor: heartOnline ? "#00ff88" : "#ff4444" }} />
-            <span>HEART: <span style={{ color: heartOnline ? "#00ff88" : "#ff4444" }} className="font-bold uppercase">{heartOnline ? "Heart Online" : "Heart Offline"}</span></span>
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: heartOnline ? "#00ff88" : "#ff4444" }} />
+            <span>HEART: <span style={{ color: heartOnline ? "#00ff88" : "#ff4444" }} className="font-bold uppercase">{heartOnline ? "Online" : "Offline"}</span></span>
+          </div>
+          <div className="h-4 w-px bg-slate-800" />
+          <div className="flex items-center gap-1.5 text-pink-400 animate-pulse">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>GSK MOOD: <span className="font-bold uppercase">{gskMood} ({gskValence})</span></span>
           </div>
         </div>
       </header>
@@ -1536,7 +1576,7 @@ export default function Workbench() {
                 { name: "INTEGRATION", min: 3500, max: 5000, desc: "Shadow merged. Whole." },
                 { name: "SOVEREIGNTY", min: 5000, max: 9999, desc: "Autonomous. Complete." }
               ].map((phase, idx) => {
-                const currentCycle = 222;
+                const currentCycle = gskCycles;
                 const isActive = currentCycle >= phase.min && currentCycle < phase.max;
 
                 return (
