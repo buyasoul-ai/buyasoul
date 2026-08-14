@@ -47,6 +47,26 @@
     }
 
     _move(ent, order) {
+      if (order.isAttackMove) {
+        let nearestEnemy = null;
+        let minD = ent.aggroRange || 18;
+        for (const other of this.entities.values()) {
+          if (other.isDead || !other.mesh) continue;
+          if (other.faction === ent.faction || other.faction === 'neutral') continue;
+          if (other.type !== 'unit' && other.type !== 'building') continue;
+          const d = ent.mesh.position.distanceTo(other.mesh.position);
+          if (d < minD) {
+            minD = d;
+            nearestEnemy = other;
+          }
+        }
+        if (nearestEnemy) {
+          ent.orders.unshift({ type: 'attack', targetId: nearestEnemy.id, _temp: true });
+          ent.state = 'moving';
+          return;
+        }
+      }
+
       if (!order._started) {
         order._started = true;
         ent.state = 'moving';

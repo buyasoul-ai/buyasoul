@@ -278,9 +278,9 @@
       if (!this._camera) return;
       const world = this._minimapToWorld(p);
       // Move camera target; camera.position is set by player-cam or OrbitControls
-      // For now just log the target position — actual camera pan needs
-      // player-cam integration or an event bus signal.
-      if (this._camera.position) {
+      if (window.__rtsCamera && window.__rtsCamera.cameraMode === 'rts' && window.__rtsCamera.rtsTarget) {
+        window.__rtsCamera.rtsTarget.set(world.x, window.__rtsCamera.rtsTarget.y, world.z);
+      } else if (this._camera.position) {
         this._camera.position.x = world.x;
         this._camera.position.z = world.z;
       }

@@ -61,18 +61,25 @@
       ensureHealthBar(ent);
 
       if (ent.healthBarGroup) {
-        // Billboard to camera
-        ent.healthBarGroup.quaternion.copy(CAMERA.quaternion);
+        // Only show health bar if selected or currently damaged (not at 100% health)
+        const isSelected = window.RTSBridge && window.RTSBridge.selection && window.RTSBridge.selection.isSelected(ent.id);
+        const isDamaged = ent.hp < ent.maxHp;
+        ent.healthBarGroup.visible = !!(isSelected || isDamaged);
 
-        // Update scale based on HP
-        const hpPct = Math.max(0, ent.hp / ent.maxHp);
-        ent.healthBarFg.scale.x = hpPct;
-        ent.healthBarFg.position.x = -1 * (1 - hpPct); // anchor left
+        if (ent.healthBarGroup.visible) {
+          // Billboard to camera
+          ent.healthBarGroup.quaternion.copy(CAMERA.quaternion);
 
-        // Color gradient
-        if (hpPct > 0.5) ent.healthBarFg.material.color.setHex(0x00ff00);
-        else if (hpPct > 0.25) ent.healthBarFg.material.color.setHex(0xffff00);
-        else ent.healthBarFg.material.color.setHex(0xff0000);
+          // Update scale based on HP
+          const hpPct = Math.max(0, ent.hp / ent.maxHp);
+          ent.healthBarFg.scale.x = hpPct;
+          ent.healthBarFg.position.x = -1 * (1 - hpPct); // anchor left
+
+          // Color gradient
+          if (hpPct > 0.5) ent.healthBarFg.material.color.setHex(0x00ff00);
+          else if (hpPct > 0.25) ent.healthBarFg.material.color.setHex(0xffff00);
+          else ent.healthBarFg.material.color.setHex(0xff0000);
+        }
       }
     }
   }

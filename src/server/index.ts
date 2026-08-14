@@ -5,7 +5,6 @@ import { trpcServer } from '@hono/trpc-server';
 import { createServer, getServerPort } from '@devvit/web/server';
 import { menu } from './routes/menu';
 import { triggers } from './routes/triggers';
-import { agentRouter } from './routes/agent';
 import { appRouter } from './trpc';
 import { createContext } from './context';
 
@@ -26,7 +25,6 @@ internal.route('/menu', menu);
 internal.route('/triggers', triggers);
 
 app.route('/api', api);
-app.route('/api', agentRouter); // Hook up all universal agent & router APIs
 app.route('/internal', internal);
 
 serve({

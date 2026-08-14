@@ -113,11 +113,73 @@
   }
 
   /**
+   * Issue ground attack-move order.
+   */
+  function issueAttackMoveGround(point, shiftKey) {
+    const entities = window.RTSEngineCore?.ENTITIES;
+    if (!entities) return;
+
+    const selected = selection.list;
+    const movable = selected
+      .map(id => entities.get(id))
+      .filter(e => e && !e.isDead && e.type === 'unit' && e.speed > 0);
+
+    if (movable.length === 0) return;
+
+    const slots = calculateFormationSlots(movable, point);
+    for (let i = 0; i < movable.length; i++) {
+      const unit = movable[i];
+      const slot = slots[i];
+      unit.orders = shiftKey ? (unit.orders || []) : [];
+      unit.orders.push({
+        type: 'move',
+        destination: slot,
+        isAttackMove: true
+      });
+      unit.targetPos = slot;
+      unit.state = 'moving';
+      if (window.RTSNavGrid) {
+        unit._navTarget = slot.clone();
+        unit._navWaypoints = window.RTSNavGrid.findPath(
+          unit.mesh.position.x, unit.mesh.position.z,
+          slot.x, slot.z
+        );
+        unit._navWPIndex = 0;
+      }
+    }
+    spawnMoveMarker(point, false);
+    if (window.RTSAudioSynthesizer) {
+      window.RTSAudioSynthesizer.play('move');
+    }
+  }
+
+  /**
    * Handle left-click from RTSInputRouter.
    * Delegates to RTSSelection for the click/double-click logic.
    */
   function handleLeftClick(data) {
     const { point, hits, shiftKey } = data;
+
+    if (window.__rtsAttackMoveActive === true) {
+      window.__rtsAttackMoveActive = false;
+      document.body.style.cursor = 'default';
+      const hint = document.getElementById('controls-hint');
+      if (hint) {
+        hint.textContent = 'TACTICAL/RTS CAMERA · WASD or Arrows to Pan · Shift to Pan Fast · SCROLL to zoom · drag dragbox to select · ESC orbit';
+      }
+
+      const unitHit = findUnitHit(hits);
+      if (unitHit && unitHit.entity && unitHit.entity.faction !== 'player') {
+        issueOrder('attack', unitHit.entity, null, shiftKey);
+        return true;
+      }
+
+      if (point) {
+        issueAttackMoveGround(point, shiftKey);
+        return true;
+      }
+      return true;
+    }
 
     // Find first unit hit
     const unitHit = findUnitHit(hits);
@@ -268,7 +330,10 @@
               unit._navWPIndex = 0;
             }
           }
-          spawnMoveMarker(point);
+          spawnMoveMarker(point, false);
+          for (const slot of slots) {
+            spawnMoveMarker(slot, true);
+          }
           return true;
         }
         break;
@@ -335,11 +400,13 @@
   /**
    * Spawn a move/attack marker ring on the ground (visual feedback).
    */
-  function spawnMoveMarker(pos) {
+  function spawnMoveMarker(pos, isSubSlot = false) {
     if (!ctx.scene || !pos) return;
     const T = window.THREE;
+    const rInner = isSubSlot ? 0.4 : 1.0;
+    const rOuter = isSubSlot ? 0.7 : 1.5;
     const marker = new T.Mesh(
-      new T.RingGeometry(1, 1.5, 16),
+      new T.RingGeometry(rInner, rOuter, 16),
       new T.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.8, side: T.DoubleSide })
     );
     marker.rotation.x = -Math.PI / 2;
@@ -413,6 +480,16 @@
   function handleKey(key, e, ctx) {
     if (ctx.focus !== 'world') return false;
 
+    if (e.code === 'Escape' && window.__rtsAttackMoveActive === true) {
+      window.__rtsAttackMoveActive = false;
+      document.body.style.cursor = 'default';
+      const hint = document.getElementById('controls-hint');
+      if (hint) {
+        hint.textContent = 'TACTICAL/RTS CAMERA · WASD or Arrows to Pan · Shift to Pan Fast · SCROLL to zoom · drag dragbox to select · ESC orbit';
+      }
+      return true;
+    }
+
     // ── Control group keys: 1-9 ──
     const num = parseInt(key, 10);
     if (num >= 1 && num <= 9) {
@@ -437,6 +514,14 @@
 
     switch (key) {
       case 'a': // Attack move — enters attack-move mode
+        if (selection.ids.size > 0) {
+          window.__rtsAttackMoveActive = true;
+          document.body.style.cursor = 'crosshair';
+          const hint = document.getElementById('controls-hint');
+          if (hint) {
+            hint.textContent = 'ATTACK MOVE: Left-click on ground to attack-move there, or ESC to cancel';
+          }
+        }
         return true;
       case 's': // Stop
         stopSelected();
