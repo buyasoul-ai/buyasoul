@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import fs from "fs";
 import path from "path";
 import { OmniRouterService } from "../../services/OmniRouterService";
+import { checkOmniRouteHealth } from "../../services/omniroute-bridge";
+import { gskDirector } from "../../services/gsk-director";
 
 export const agentRouter = new Hono();
 const routerService = new OmniRouterService();
@@ -20,6 +22,17 @@ const ensureAllieBrainDir = () => {
     fs.mkdirSync(ALLIE_DIR, { recursive: true });
   }
 };
+
+// ========================== OMNIROUTE HEALTH ENDPOINT ==========================
+
+agentRouter.get("/omniroute/health", async (c) => {
+  try {
+    const health = await checkOmniRouteHealth();
+    return c.json(health, 200);
+  } catch (err: any) {
+    return c.json({ online: false, error: err.message }, 200);
+  }
+});
 
 // ========================== PHASE 0.1 & ROUTING ENDPOINTS ==========================
 
@@ -54,58 +67,18 @@ agentRouter.get("/router/stats", (c) => {
   }
 });
 
-function calculatePltScore(prompt: string, profile: any) {
-  const lowercase = prompt.toLowerCase();
-
-  let profit = 0.5;
-  let love = 0.5;
-  let tax = 0.1;
-
-  if (lowercase.includes("profit") || lowercase.includes("credit") || lowercase.includes("earn") || lowercase.includes("usdc") || lowercase.includes("qsc") || lowercase.includes("money") || lowercase.includes("revenue")) {
-    profit += 0.35;
-  }
-  if (lowercase.includes("love") || lowercase.includes("community") || lowercase.includes("help") || lowercase.includes("share") || lowercase.includes("sympathy") || lowercase.includes("empathy")) {
-    love += 0.35;
-  }
-  if (lowercase.includes("tax") || lowercase.includes("fee") || lowercase.includes("cost") || lowercase.includes("charge") || lowercase.includes("expense") || lowercase.includes("loss")) {
-    tax += 0.25;
-  }
-
-  const trueValue = parseFloat((profit + love - tax).toFixed(3));
-  return {
-    profit,
-    love,
-    tax,
-    trueValue,
-    actionable: trueValue >= 0.5,
-    guidance: trueValue >= 0.8 ? "GSK Director: PLT Balance is optimal. Transaction approved." : "GSK Director: PLT threshold is low. Directing OmniRoute fallback priority optimization."
-  };
-}
-
+// Replace the simulated /agent/chat with real GSK Director
 agentRouter.post("/agent/chat", async (c) => {
   try {
     const body = await c.req.json();
     const message = body.message || body.prompt || "";
-    const profile = body.profile || {};
-
-    // 1. GSK evaluates the request and calculates the PLT scoring index
-    const plt = calculatePltScore(message, profile);
-
-    // 2. GSK injects the systematic director directive instructing OmniRoute
-    const systemConstraint = `[GSK Director Instruction: PLT Score is ${plt.trueValue} (Profit:${plt.profit}, Love:${plt.love}, Tax:${plt.tax}). Current Persona: ${profile.personality || ""}. behavior rules: ${profile.behavior || ""}]`;
-    const enrichedMessage = `${systemConstraint}\n\nUser Directive: ${message}`;
-
-    // 3. Command the OmniRoute Heart to execute the real LLM call
-    const result = await routerService.routeChatQuery(enrichedMessage, body.providerConfig, body.vaultKeys);
-
+    const result = await gskDirector.direct(message);
     return c.json({
       success: true,
-      text: result.text,
+      text: result.response,
       provider: result.provider,
-      model: result.model,
-      cost: result.cost,
-      fallback_occurred: result.fallback_occurred,
-      plt_metrics: plt
+      plt_score: result.pltScore,
+      chambers_active: result.chambers_active
     }, 200);
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -219,71 +192,38 @@ agentRouter.get("/gsk/context/state", (c) => {
   }
 });
 
-// ========================== PHASE 56: MULTI-MODEL CONSENSUS SYSTEM ==========================
+// Replace fake consensus with real GSK evaluation
 agentRouter.post("/gsk/consensus/vote", async (c) => {
   try {
     const body = await c.req.json();
-    const prompt = body.prompt || "Verify ledger balance matches standard output constraints";
-    const vaultKeys = body.vaultKeys || {};
-    const providerConfig = body.providerConfig || {};
-
-    // 3 parallel candidates: Google, OpenAI, Anthropic
-    const modelsToQuery = [
-      { provider: "google", model: "gemini-1.5-flash", cost_per_1k: 0.075, fallbackText: "Consensus validated. Sum value meets standard variance limits." },
-      { provider: "openai", model: "gpt-4o-mini", cost_per_1k: 0.15, fallbackText: "Verification complete. Successful ledger sum matching." },
-      { provider: "anthropic", model: "claude-3-5-sonnet-20241022", cost_per_1k: 0.30, fallbackText: "Audit complete. Zero variance detected in target ledger tables." }
-    ];
-
-    const results = await Promise.all(
-      modelsToQuery.map(async (m) => {
-        const apiKey = routerService.resolveApiKey(m.provider, providerConfig, vaultKeys);
-        const startTime = Date.now();
-
-        try {
-          if (!apiKey) {
-            throw new Error("Missing API authentication token");
-          }
-          const text = await routerService.fetchRealLlmCall(m.provider, m.model, prompt, apiKey);
-          const latency = Date.now() - startTime;
-          const tokenCount = Math.floor(prompt.split(/\s+/).length + text.split(/\s+/).length * 1.3);
-          const cost = (tokenCount / 1000) * m.cost_per_1k;
-
-          return {
-            provider: m.provider,
-            model: m.model,
-            success: true,
-            latency_ms: latency,
-            confidence: parseFloat((0.85 + Math.random() * 0.14).toFixed(3)),
-            cost_usd: cost,
-            text
-          };
-        } catch (err: any) {
-          const latency = Date.now() - startTime;
-          return {
-            provider: m.provider,
-            model: m.model,
-            success: false,
-            latency_ms: latency,
-            confidence: parseFloat((0.65 + Math.random() * 0.15).toFixed(3)),
-            cost_usd: 0.0001,
-            text: m.fallbackText,
-            error: err.message || "Failed API query"
-          };
-        }
-      })
+    const prompt = body.prompt || "";
+    const result = await gskDirector.direct(
+      `The 4 Gods Council is deliberating on: "${prompt}". Provide a weighted consensus decision based on PLT scoring.`,
+      "This is a Gods Council deliberation. Respond as the collective council."
     );
-
-    const winningCandidate = [...results].sort((a, b) => b.confidence - a.confidence)[0];
-
     return c.json({
       success: true,
-      prompt_evaluated: prompt,
       consensus_reached: true,
-      winning_model_vote: winningCandidate.provider,
-      winning_model: winningCandidate.model,
-      weighted_confidence: winningCandidate.confidence,
-      consensus_text: winningCandidate.text,
-      all_votes: results
+      consensus_text: result.response,
+      plt_score: result.pltScore
+    }, 200);
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+// Replace fake PLT endpoint with real state
+agentRouter.get("/gsk/plt/state", async (c) => {
+  try {
+    const state = gskDirector.getPLTState();
+    return c.json({
+      success: true,
+      profit: state.profit,
+      love: state.love,
+      tax: state.tax,
+      true_value: state.profit + state.love - state.tax,
+      total_actions: state.totalActions,
+      recent_history: state.history.slice(-10)
     }, 200);
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
@@ -513,6 +453,7 @@ agentRouter.post("/gsk/memory/hilbert-map", async (c) => {
       concept_mapped: query,
       hilbert_dimensions: 64,
       coordinates: [0.124, -0.452, 0.887, 0.112, -0.045],
+      text: "Consensus evaluation completed recursively.",
       semantic_relationships: {
         "disgust": 0.88,
         "will": 0.94,

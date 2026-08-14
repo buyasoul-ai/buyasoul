@@ -65,6 +65,15 @@ import {
 } from "lucide-react";
 
 export default function Workbench() {
+  const [heartOnline, setHeartOnline] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetch("/api/omniroute/health")
+      .then(r => r.json())
+      .then(data => setHeartOnline(data.online))
+      .catch(() => setHeartOnline(false));
+  }, []);
+
   // Master state definitions
   const [profile, setProfile] = useState<AgentProfile>({
     name: "LedgerScout Protocol",
@@ -642,6 +651,11 @@ export default function Workbench() {
           <div className="flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-yellow-400" />
             <span>CHAMBERS: <span className="text-slate-300 font-bold">34 ACTIVE</span></span>
+          </div>
+          <div className="h-4 w-px bg-slate-800" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full animate-pulse-slow" style={{ backgroundColor: heartOnline ? "#00ff88" : "#ff4444" }} />
+            <span>HEART: <span style={{ color: heartOnline ? "#00ff88" : "#ff4444" }} className="font-bold uppercase">{heartOnline ? "Heart Online" : "Heart Offline"}</span></span>
           </div>
         </div>
       </header>
