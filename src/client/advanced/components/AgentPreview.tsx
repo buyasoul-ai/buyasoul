@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from "react";
 import { AgentProfile, ProviderConfig } from "../types";
 import { User, Cpu, Sparkles, Shield, Zap, Terminal, HeartHandshake, Loader2, Video, Swords } from "lucide-react";
