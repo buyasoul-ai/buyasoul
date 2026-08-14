@@ -4,6 +4,7 @@ import path from "path";
 import { OmniRouterService } from "../../services/OmniRouterService";
 import { checkOmniRouteHealth } from "../../services/omniroute-bridge";
 import { gskDirector } from "../../services/gsk-director";
+import { scoutAgent, scribeAgent } from "../services/sub-agents";
 
 export const agentRouter = new Hono();
 const routerService = new OmniRouterService();
@@ -23,6 +24,8 @@ const ensureAllieBrainDir = () => {
   }
 };
 
+import { gskKernel } from "../kernel";
+
 // ========================== OMNIROUTE HEALTH ENDPOINT ==========================
 
 agentRouter.get("/omniroute/health", async (c) => {
@@ -32,6 +35,42 @@ agentRouter.get("/omniroute/health", async (c) => {
   } catch (err: any) {
     return c.json({ online: false, error: err.message }, 200);
   }
+});
+
+// ========================== GSK AUTONOMIC BREATH TELEMETRY STREAM ==========================
+
+agentRouter.get("/gsk/breath-stream", (c) => {
+  return c.streamText(async (stream) => {
+    c.header("Content-Type", "text/event-stream");
+    c.header("Cache-Control", "no-cache");
+    c.header("Connection", "keep-alive");
+
+    const unsubscribe = gskKernel.subscribe((data) => {
+      try {
+        stream.write(`data: ${JSON.stringify(data)}\n\n`);
+      } catch (e) {
+        // stream might be closed
+      }
+    });
+
+    // Send immediate current state snapshot on connection handshake
+    stream.write(`data: ${JSON.stringify({
+      type: "init",
+      mythos: gskKernel.mythos,
+      affect: gskKernel.affect,
+      plt: gskKernel.pltState
+    })}\n\n`);
+
+    // Listen to abort signals to unsubscribe gracefully
+    c.req.raw.signal.addEventListener("abort", () => {
+      unsubscribe();
+    });
+
+    // Keep connection alive while stream signal is healthy
+    while (!c.req.raw.signal.aborted) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  });
 });
 
 // ========================== PHASE 0.1 & ROUTING ENDPOINTS ==========================
@@ -67,12 +106,16 @@ agentRouter.get("/router/stats", (c) => {
   }
 });
 
-// Replace the simulated /agent/chat with real GSK Director
+// Replace the simulated /agent/chat with real GSK Director and Scribe witness
 agentRouter.post("/agent/chat", async (c) => {
   try {
     const body = await c.req.json();
     const message = body.message || body.prompt || "";
     const result = await gskDirector.direct(message);
+
+    // Scribe Agent witnesses the interaction and writes episodic record in background
+    await scribeAgent.witness(message, result.response, result.pltScore);
+
     return c.json({
       success: true,
       text: result.response,
@@ -80,6 +123,18 @@ agentRouter.post("/agent/chat", async (c) => {
       plt_score: result.pltScore,
       chambers_active: result.chambers_active
     }, 200);
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+// Post endpoint for triggering real-time background Scout Agent sweeps
+agentRouter.post("/gsk/scout", async (c) => {
+  try {
+    const body = await c.req.json();
+    const targetUrl = body.targetUrl || "http://localhost:20128";
+    await scoutAgent.analyzeTarget(targetUrl);
+    return c.json({ success: true, message: "Scout background analysis launched successfully." }, 200);
   } catch (err: any) {
     return c.json({ success: false, error: err.message }, 500);
   }

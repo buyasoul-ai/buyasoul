@@ -8,6 +8,7 @@ import { triggers } from './routes/triggers';
 import { agentRouter } from './routes/agent';
 import { appRouter } from './trpc';
 import { createContext } from './context';
+import { gskKernel } from './kernel'; // Boot the GSK background kernel singleton
 
 const app = new Hono();
 
