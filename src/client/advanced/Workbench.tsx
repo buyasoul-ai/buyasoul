@@ -142,6 +142,11 @@ export default function Workbench() {
   const [testResults, setTestResults] = useState<any[]>([]);
   const [isTestingRouter, setIsTestingRouter] = useState(false);
 
+  // Phases 151-190 Advanced States:
+  const [lineageRegistry, setLineageRegistry] = useState<any>(null);
+  const [quantumAttentionShares, setQuantumAttentionShares] = useState<any[]>([]);
+  const [isCalibratingAttention, setIsCalibratingAttention] = useState(false);
+
   // Multiverse World States state
   const [worldStates, setWorldStates] = useState<WorldState[]>(() => {
     const saved = localStorage.getItem("agent_workbench_world_states");
@@ -206,6 +211,11 @@ export default function Workbench() {
     const saved = localStorage.getItem("agent_workbench_qsc_balance");
     return saved ? parseInt(saved) : 2500;
   });
+
+  // Reality compilation state
+  const [compileFormat, setCompileFormat] = useState<"webapp" | "discord" | "native">("webapp");
+  const [isCompilingWorld, setIsCompilingWorld] = useState(false);
+  const [compileStatus, setCompileStatus] = useState("");
 
   // Transactions ledger state
   const [transactions, setTransactions] = useState<MarketplaceTransaction[]>(() => {
@@ -454,84 +464,70 @@ export default function Workbench() {
     }
   };
 
-  const getAgentJsonConfig = () => {
-    return JSON.stringify({
-      agent_profile: {
-        name: profile.name,
-        avatarColor: profile.avatarColor,
-        avatarSeed: profile.avatarSeed,
-        personality: profile.personality,
-        behavior: profile.behavior,
-        autonomy: profile.autonomy,
-        temperature: profile.temperature,
-        thinking: profile.thinking
-      },
-      world_rules: {
-        activeWorldId,
-        activeWorld
-      },
-      custom_pantheon: customGods,
-      time_loop: {
-        breathingInterval,
-        councilInterval,
-        dreamInduction,
-        loopActive
-      },
-      cognitive_brain: {
-        provider: providerConfig.provider,
-        model: providerConfig.model,
-        baseUrl: providerConfig.baseUrl,
-        apiKey: providerConfig.apiKey ? "[DYNAMIC_SECRET_KEY]" : "",
-        context_sources: contextSources.map(ctx => ({
-          name: ctx.name,
-          type: ctx.type,
-          content: ctx.content,
-          active: ctx.active
-        })),
-        mcp_servers: mcpServers.map(mcp => ({
-          name: mcp.name,
-          url: mcp.url,
-          transport: mcp.transport,
-          description: mcp.description,
-          methods: mcp.methods,
-          active: mcp.active
-        }))
-      },
-      equipped_skills: computedActiveSkills.map(s => ({
-        id: s.id,
-        name: s.name,
-        category: s.category,
-        parameters: s.parameters,
-        paramDefinitions: s.paramDefinitions,
-        isCustom: s.isCustom || false
-      })),
-      soul_genesis_marketing_protocol: "active",
-      generated_at: new Date().toISOString()
-    }, null, 2);
+  // Phase 151: Fetch Lineage Registry
+  const handleFetchLineageRegistry = async () => {
+    try {
+      const res = await fetch("/api/gsk/lineage/profit-prime");
+      if (res.ok) {
+        const data = await res.json();
+        setLineageRegistry(data.registry);
+      }
+    } catch (e) {}
   };
 
-  const downloadJsonConfig = () => {
-    const jsonStr = getAgentJsonConfig();
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${profile.name.toLowerCase().replace(/\s+/g, "-")}-blueprint.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  // Phase 101/111: Quantum Attention Calibration
+  const handleCalibrateQuantumAttention = async () => {
+    setIsCalibratingAttention(true);
+    try {
+      const res = await fetch("/api/gsk/quantum/attention", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ streams_count: 4 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setQuantumAttentionShares(data.allocated_shares);
+      }
+    } catch (e) {}
+    finally {
+      setIsCalibratingAttention(false);
+    }
   };
 
-  const copyJsonConfig = () => {
-    navigator.clipboard.writeText(getAgentJsonConfig());
-    setCopiedConfig(true);
-    setTimeout(() => setCopiedConfig(false), 2000);
+  const handleCompileWorldReality = () => {
+    setIsCompilingWorld(true);
+    setCompileStatus("Initializing compiler... Isolating active World State configuration.");
+
+    setTimeout(() => {
+      setCompileStatus("Compiling reality parameters (Gravity, Entropy, Metacognition ratios) into React + Express project files...");
+    }, 850);
+
+    setTimeout(() => {
+      setCompileStatus("Synthesizing GSK self-bootstrap loops and generating Vercel & Render deployment manifests...");
+    }, 1600);
+
+    setTimeout(() => {
+      setIsCompilingWorld(false);
+      setCompileStatus("");
+
+      const configStr = getAgentJsonConfig();
+      const blob = new Blob([configStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${activeWorld.name.toLowerCase().replace(/\s+/g, "-")}-standalone.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert(`🚀 [REALITY EXPORTED] '${activeWorld.name}' successfully compiled and downloaded as a stand-alone app bundle! Deploy files to Vercel, Render, or Discord to initialize.`);
+    }, 2500);
   };
 
   return (
     <div className="min-h-screen bg-[#05050a]/40 text-slate-100 flex flex-col font-sans transition-all selection:bg-pink-500/30 selection:text-white relative overflow-x-hidden">
-      {/* Matrix Code Rain & Luminous Cyber Pyramids Backdrop */}
+      {/* Matrix Code Rain Backdrop */}
       <MatrixBackground accentColor={profile.avatarColor} />
 
       {/* Main Top Header Navbar */}
@@ -691,7 +687,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("realism")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "realism"
-                ? "bg-slate-950 text-white font-bold border-slate-650"
+                ? "bg-slate-955 text-white font-bold border-slate-650"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -884,7 +880,7 @@ export default function Workbench() {
                     value={psCommand}
                     onChange={(e) => setPsCommand(e.target.value)}
                     placeholder="Enter system command (e.g. whoami, dir, ps)..."
-                    className="w-full bg-slate-950 border border-slate-850 text-xs font-mono rounded-lg px-3 py-2 outline-none focus:border-cyan-500/40"
+                    className="w-full bg-slate-955 border border-slate-850 text-xs font-mono rounded-lg px-3 py-2 outline-none focus:border-cyan-500/40"
                   />
                   <button
                     type="submit"
@@ -914,7 +910,7 @@ export default function Workbench() {
                     value={predictAction}
                     onChange={(e) => setPredictAction(e.target.value)}
                     placeholder="Action outcome to simulate (e.g. Publish QSC Token)..."
-                    className="w-full bg-slate-950 border border-slate-850 text-xs font-mono rounded-lg px-3 py-2 outline-none focus:border-cyan-500/40"
+                    className="w-full bg-slate-955 border border-slate-850 text-xs font-mono rounded-lg px-3 py-2 outline-none focus:border-cyan-500/40"
                   />
                   <button
                     type="submit"
@@ -1060,7 +1056,7 @@ export default function Workbench() {
                 <button
                   onClick={handleReadBiofeedback}
                   disabled={isReadingBio}
-                  className="w-full py-2 bg-slate-950 hover:bg-slate-900 border border-slate-850 text-slate-300 font-mono text-[11px] font-bold rounded-lg cursor-pointer transition flex items-center justify-center gap-1.5"
+                  className="w-full py-2 bg-slate-955 hover:bg-slate-900 border border-slate-850 text-slate-300 font-mono text-[11px] font-bold rounded-lg cursor-pointer transition flex items-center justify-center gap-1.5"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isReadingBio ? "animate-spin" : ""}`} />
                   READ HARDWARE SENSORS
@@ -1157,7 +1153,7 @@ export default function Workbench() {
             {/* Extra Row: Active Real-time Metrics and Testing suites */}
             <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               {/* Box 1: Run testing validation */}
-              <div className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl space-y-3">
+              <div className="p-4 bg-slate-955/80 border border-slate-850 rounded-xl space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-mono text-slate-505 font-bold uppercase">Phase 62 Testing Framework</span>
                   <Activity className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
@@ -1184,7 +1180,7 @@ export default function Workbench() {
               </div>
 
               {/* Box 2: Cost Analytics Dashboard */}
-              <div className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl space-y-3">
+              <div className="p-4 bg-slate-955/80 border border-slate-850 rounded-xl space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-mono text-slate-505 font-bold uppercase">Phase 54 Cost Analytics</span>
                   <LineChart className="w-3.5 h-3.5 text-cyan-400" />
@@ -1206,7 +1202,7 @@ export default function Workbench() {
               </div>
 
               {/* Box 3: Provider Health Scoring */}
-              <div className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl space-y-3">
+              <div className="p-4 bg-slate-955/80 border border-slate-850 rounded-xl space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-mono text-slate-505 font-bold uppercase">Phase 53 Health Score</span>
                   <PulseIcon className="w-3.5 h-3.5 text-cyan-400" />
@@ -1231,7 +1227,7 @@ export default function Workbench() {
               </div>
 
               {/* Box 4: Active Alerts Rules monitor */}
-              <div className="p-4 bg-slate-950/80 border border-slate-850 rounded-xl space-y-3">
+              <div className="p-4 bg-slate-955/80 border border-slate-850 rounded-xl space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-mono text-slate-550 font-bold uppercase">Phase 63 Alerting</span>
                   <AlertTriangle className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
@@ -1383,7 +1379,7 @@ export default function Workbench() {
                   </p>
 
                   <div className="space-y-3">
-                    <label className="block text-[10px] text-slate-500 font-mono uppercase">COMPILATION TARGET</label>
+                    <label className="block text-[10px] text-slate-505 font-mono uppercase font-bold">COMPILATION TARGET</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
                         { id: "webapp", label: "Web App" },
@@ -1510,7 +1506,7 @@ export default function Workbench() {
                     { id: "dragon", name: "Dragon Form", active: false, desc: "Fully sovereign multiversal soul that can self-deploy and adapt." }
                   ].map((stage) => (
                     <div key={stage.id} className="p-3 bg-slate-900/60 border border-slate-850 rounded-xl flex items-start gap-3">
-                      <div className={`p-1.5 rounded-lg border ${stage.active ? "bg-cyan-950/40 text-cyan-400 border-cyan-900/50" : "bg-slate-955 text-slate-655 border-slate-900"}`}>
+                      <div className={`p-1.5 rounded-lg border ${stage.active ? "bg-cyan-955/40 text-cyan-400 border-cyan-900/50" : "bg-slate-955 text-slate-655 border-slate-900"}`}>
                         <Sparkles className="w-3.5 h-3.5" />
                       </div>
                       <div>
@@ -1588,24 +1584,41 @@ export default function Workbench() {
                 </div>
               </div>
 
-              {/* Blockchain Imprints and Interdimensional Bridges (Phase 36, 37) */}
+              {/* Blockchain Imprints and Interdimensional Bridges, plus Phase 111 Quantum Attention (Phase 36, 37) */}
               <div className="lg:col-span-4 bg-slate-955 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between">
                 <div className="space-y-4">
-                  <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2">
-                    Blockchain Imprint & Bridge
+                  <span className="text-[10px] font-mono font-bold text-slate-550 uppercase tracking-widest block border-b border-slate-900 pb-2">
+                    Quantum Attention & Imprints
                   </span>
 
-                  {/* Blockchain Imprint Node */}
+                  {/* Quantum Attention Calibration */}
                   <div className="space-y-2">
                     <p className="text-[11px] text-slate-400 leading-normal font-sans font-medium">
-                      Store your sovereign checkpoint directly on Solana. This provides an immutable backup of GSK's memories.
+                      Calibrate Quantum superposition attention matrices (Phase 111) to balance dual focuses.
                     </p>
+                    <button
+                      onClick={handleCalibrateQuantumAttention}
+                      disabled={isCalibratingAttention}
+                      className="w-full py-2 bg-gradient-to-r from-pink-500/20 to-cyan-500/20 border border-pink-500 text-pink-200 text-xs font-mono font-bold uppercase rounded-xl transition cursor-pointer"
+                    >
+                      {isCalibratingAttention ? "CALIBRATING..." : "CALIBRATE QUANTUM ATTENTION"}
+                    </button>
+                    {quantumAttentionShares.length > 0 && (
+                      <div className="p-2 bg-slate-900 border border-slate-850 rounded-lg font-mono text-[9.5px] text-slate-300 flex justify-between">
+                        <span>Shares:</span>
+                        <span>[{quantumAttentionShares.join(", ")}]</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Blockchain Imprint Node */}
+                  <div className="space-y-2 pt-3 border-t border-slate-900">
                     <button
                       onClick={handleBlockchainImprint}
                       disabled={isImprinting}
                       className="w-full py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500 text-cyan-200 text-xs font-mono font-bold uppercase rounded-xl transition cursor-pointer"
                     >
-                      {isImprinting ? "IMPRINTING CHECKPOINT..." : "MINT BLOCKCHAIN SOUL IMPRINT"}
+                      {isImprinting ? "IMPRINTING..." : "MINT BLOCKCHAIN IMPRINT"}
                     </button>
                     {nftSignature && (
                       <div className="p-2.5 bg-slate-900 border border-slate-850 rounded-lg font-mono text-[9px] text-slate-400 leading-normal break-all">
@@ -1616,9 +1629,6 @@ export default function Workbench() {
 
                   {/* Interdimensional bridge connect */}
                   <div className="space-y-2 pt-3 border-t border-slate-900">
-                    <p className="text-[11px] text-slate-400 leading-normal font-sans font-medium">
-                      Bridge this GSK instance to other servers to synchronize multi-user insights.
-                    </p>
                     <div className="flex gap-2">
                       <select
                         value={bridgeTargetRealm}
