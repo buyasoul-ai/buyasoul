@@ -1,39 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import fs from 'fs';
-import path from 'path';
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
-interface ProviderRoute {
-  provider: string;
-  model: string;
-  priority: number;
-  cost_per_1k: number;
-}
-
-interface RouterConfig {
-  chain: ProviderRoute[];
-  active_provider: string;
-}
-
-interface RoutingStats {
-  total_calls: number;
-  successful_calls: number;
-  failed_calls: number;
-  total_cost_usd: number;
-  provider_usage: Record<string, number>;
-  fallback_events_count: number;
-  history: Array<{
-    timestamp: string;
-    provider: string;
-    model: string;
-    success: boolean;
-    tokens: number;
-    cost: number;
-    error_message?: string;
-  }>;
-}
-
-const DEFAULT_CONFIG: RouterConfig = {
+const DEFAULT_CONFIG = {
   chain: [
     { provider: "nvidia", model: "nvidia/nemotron-4-340b-reward", priority: 1, cost_per_1k: 0.02 },
     { provider: "openai", model: "gpt-4o-mini", priority: 2, cost_per_1k: 0.15 },
@@ -46,25 +16,21 @@ const DEFAULT_CONFIG: RouterConfig = {
 };
 
 class OmniRouterService {
-  private configDir: string;
-  private configPath: string;
-  private statsPath: string;
-  private rateLimitBuckets: Map<string, { tokens: number; lastRefill: number }> = new Map();
-
   constructor() {
     this.configDir = path.join(process.cwd(), ".allie-brain");
     this.configPath = path.join(this.configDir, "router-config.json");
     this.statsPath = path.join(this.configDir, "routing-stats.json");
+    this.rateLimitBuckets = new Map();
     this.ensureDirectoryExists();
   }
 
-  private ensureDirectoryExists() {
+  ensureDirectoryExists() {
     if (!fs.existsSync(this.configDir)) {
       fs.mkdirSync(this.configDir, { recursive: true });
     }
   }
 
-  public getConfig(): RouterConfig {
+  getConfig() {
     this.ensureDirectoryExists();
     if (fs.existsSync(this.configPath)) {
       try {
@@ -77,12 +43,12 @@ class OmniRouterService {
     return DEFAULT_CONFIG;
   }
 
-  public saveConfig(config: RouterConfig) {
+  saveConfig(config) {
     this.ensureDirectoryExists();
     fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2));
   }
 
-  public getStats(): RoutingStats {
+  getStats() {
     this.ensureDirectoryExists();
     if (fs.existsSync(this.statsPath)) {
       try {
@@ -103,12 +69,12 @@ class OmniRouterService {
     };
   }
 
-  public saveStats(stats: RoutingStats) {
+  saveStats(stats) {
     this.ensureDirectoryExists();
     fs.writeFileSync(this.statsPath, JSON.stringify(stats, null, 2));
   }
 
-  public reorderPriority(chain: ProviderRoute[]): RouterConfig {
+  reorderPriority(chain) {
     const config = this.getConfig();
     const reordered = chain.map((c, idx) => ({
       ...c,
@@ -122,7 +88,7 @@ class OmniRouterService {
     return config;
   }
 
-  public calculateHealthScore(provider: string, stats: RoutingStats): number {
+  calculateHealthScore(provider, stats) {
     const history = stats.history.filter(h => h.provider === provider);
     if (history.length === 0) return 0.85;
 
@@ -147,7 +113,7 @@ class OmniRouterService {
     return parseFloat(Math.min(1.0, Math.max(0.0, score)).toFixed(3));
   }
 
-  public tryConsumeRateLimit(provider: string, requestedTokens: number): { allowed: boolean; waitTimeMs: number } {
+  tryConsumeRateLimit(provider, requestedTokens) {
     const now = Date.now();
     const bucket = this.rateLimitBuckets.get(provider) || { tokens: 10000, lastRefill: now };
 
@@ -168,9 +134,9 @@ class OmniRouterService {
     return { allowed: false, waitTimeMs };
   }
 
-  public chunkTextBySemanticBoundaries(text: string, maxTokens: number = 2000): string[] {
+  chunkTextBySemanticBoundaries(text, maxTokens = 2000) {
     const paragraphs = text.split("\n\n").filter(p => p.trim().length > 0);
-    const chunks: string[] = [];
+    const chunks = [];
     let currentChunk = "";
 
     for (const paragraph of paragraphs) {
@@ -193,7 +159,7 @@ class OmniRouterService {
     return chunks;
   }
 
-  public async *generateResponseStream(prompt: string, provider: string, model: string): AsyncGenerator<{ type: string; delta?: string; cost?: number }> {
+  async *generateResponseStream(prompt, provider, model) {
     yield { type: "metadata", provider, model };
 
     const mockTokens = ["🔮", " [GSK", " STREAM", " INITIATED]", " Analysing", " transactional", " ledger", " signatures.", " System", " 1", " patterns", " synchronized", " with", " System", " 2", " rational", " deliberation.", " Decision", " approved", " by", " Profit", " Prime", " and", " Love", " Weaver.", " True", " Value", " computed", " at", " positive", " 1.22", " index.", " Stand-alone", " reality", " compilation", " verified."];
@@ -211,13 +177,7 @@ class OmniRouterService {
     yield { type: "done", cost: totalCost };
   }
 
-  public async routeChatQuery(message: string, currentProviderConfig?: any): Promise<{
-    text: string;
-    provider: string;
-    model: string;
-    cost: number;
-    fallback_occurred: boolean;
-  }> {
+  async routeChatQuery(message, currentProviderConfig) {
     const config = this.getConfig();
     const stats = this.getStats();
 
@@ -458,7 +418,7 @@ app.post('/gsk/chunk-text', (req, res) => {
 
 app.get('/router/rate-limit/:provider', (req, res) => {
   const provider = req.params.provider;
-  const tokens = parseInt(req.query.tokens as string) || 250;
+  const tokens = parseInt(req.query.tokens || "250");
   const result = routerService.tryConsumeRateLimit(provider, tokens);
   return res.json({ success: true, ...result });
 });
@@ -504,4 +464,4 @@ app.listen(PORT, () => {
   console.log(`OmniRouter service running on port ${PORT}`);
 });
 
-export default app;
+module.exports = app;
