@@ -1,0 +1,17 @@
+{
+  "name": "omnirouter-service",
+  "version": "1.0.0",
+  "description": "Standalone OmniRouter API service for GSK — provider fallback chain, health scoring, rate limiting, and chat routing",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js",
+    "lint": "eslint ."
+  },
+  "keywords": ["gsk", "omniroute", "llm-router", "provider-fallback"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  }
+}
