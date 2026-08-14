@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { queryOmniRoute } from "./omniroute-bridge";
 
 export interface ProviderRoute {
   provider: string;
@@ -33,7 +34,7 @@ export interface RoutingStats {
 
 const DEFAULT_CONFIG: RouterConfig = {
   chain: [
-    { provider: "omniroute", model: "auto/best-reasoning", priority: 1, cost_per_1k: 0.00 },
+    { provider: "omniroute", model: "auto", priority: 1, cost_per_1k: 0.00 },
     { provider: "gemini", model: "gemini-1.5-flash", priority: 2, cost_per_1k: 0.075 },
     { provider: "openai", model: "gpt-4o-mini", priority: 3, cost_per_1k: 0.15 },
     { provider: "anthropic", model: "claude-3-5-sonnet-20241022", priority: 4, cost_per_1k: 0.30 },
@@ -122,13 +123,13 @@ export class OmniRouterService {
 
   public calculateHealthScore(provider: string, stats: RoutingStats): number {
     const history = stats.history.filter(h => h.provider === provider);
-    if (history.length === 0) return 0.95; // OmniRoute default is very high
+    if (history.length === 0) return 0.95;
 
     const total = history.length;
     const failed = history.filter(h => !h.success).length;
     const errorRate = failed / total;
 
-    const avgLatency = history.reduce((acc, h) => acc + (h.success ? h.cost : 500), 0) / total;
+    const avgLatency = history.reduce((acc, h) => acc + (h.success ? 100 : 500), 0) / total;
     const normalizedLatency = Math.min(1, Math.max(0, (avgLatency - 50) / 1450));
 
     const route = this.getConfig().chain.find(c => c.provider === provider);
@@ -147,7 +148,7 @@ export class OmniRouterService {
 
   public tryConsumeRateLimit(provider: string, requestedTokens: number): { allowed: boolean; waitTimeMs: number } {
     const now = Date.now();
-    const bucket = this.rateLimitBuckets.get(provider) || { tokens: 50000, lastRefill: now }; // Higher limits for OmniRoute
+    const bucket = this.rateLimitBuckets.get(provider) || { tokens: 50000, lastRefill: now };
 
     const timePassedSec = (now - bucket.lastRefill) / 1000;
     const refilledTokens = Math.min(50000, bucket.tokens + timePassedSec * 1000);
@@ -213,224 +214,52 @@ export class OmniRouterService {
     return "";
   }
 
-  /**
-   * Real-time OmniRoute response streaming.
-   * Leverages real fetch calls to local OmniRoute daemon or falls back to public proxies/local generators.
-   */
-  public async *generateResponseStream(prompt: string, provider: string, model: string): AsyncGenerator<{ type: string; delta?: string; cost?: number }> {
-    yield { type: "metadata", delta: `[GSK STREAM INITIATED VIA ${provider.toUpperCase()}]` };
-
-    const omniRouteUrl = "http://localhost:20128/v1/chat/completions";
-    let isSuccessful = false;
-
-    try {
-      const res = await fetch(omniRouteUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: model || "auto/best-reasoning",
-          messages: [{ role: "user", content: prompt }],
-          stream: true
-        })
-      });
-
-      if (res.ok && res.body) {
-        isSuccessful = true;
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            const cleanLine = line.trim();
-            if (!cleanLine || cleanLine === "data: [DONE]") continue;
-
-            if (cleanLine.startsWith("data: ")) {
-              try {
-                const parsed = JSON.parse(cleanLine.slice(6));
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  yield { type: "content", delta: content };
-                }
-              } catch (e) {
-                // Ignore malformed json lines
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      // Local daemon is offline, fall back to simulated token generator down the stream
-    }
-
-    if (!isSuccessful) {
-      // High-fidelity fallback stream for testing and standalone compilation environments
-      const fallbackTokens = [
-        "🔮", " [GSK", " EMULATED", " HEARTBEAT]", " Local", " OmniRoute", " gateway",
-        " not", " yet", " detected", " on", " port", " 20128.", " Activating", " sovereign",
-        " fallback", " routing.", " True", " PLT", " valuation", " computed", " successfully."
-      ];
-      for (const token of fallbackTokens) {
-        await new Promise(resolve => setTimeout(resolve, 30));
-        yield { type: "content", delta: token };
-      }
-    }
-
-    yield { type: "done", cost: 0.0 };
-  }
-
-  /**
-   * Performs the real fetch request to the OmniRoute gateway or falls back to traditional models.
-   */
   public async fetchRealLlmCall(
     provider: string,
     model: string,
     prompt: string,
     apiKey: string
   ): Promise<string> {
-    // If routing through omniroute, we hit the local daemon first
-    if (provider === "omniroute") {
-      const endpoints = [
-        "http://localhost:20128/v1/chat/completions",
-        "https://api.omniroute.ai/v1/chat/completions" // Public proxy
-      ];
-
-      for (const url of endpoints) {
-        try {
-          const res = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": apiKey ? `Bearer ${apiKey}` : ""
-            },
-            body: JSON.stringify({
-              model: model || "auto/best-reasoning",
-              messages: [{ role: "user", content: prompt }]
-            }),
-            signal: AbortSignal.timeout(6000) // 6s timeout per gateway
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            return data.choices[0].message.content;
-          }
-        } catch (e) {
-          // Continue to fallback endpoint
-        }
-      }
-      throw new Error("Local and public OmniRoute gateways are currently offline or unreachable.");
-    }
-
-    // Traditional providers
+    const url = this.getProviderUrl(provider);
     if (!apiKey) {
       throw new Error(`Authentication token missing for provider: ${provider}`);
     }
 
-    switch (provider) {
-      case "openai": {
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: prompt }]
-          })
-        });
-        if (!res.ok) throw new Error(`OpenAI HTTP Error ${res.status}`);
-        const data = await res.json();
-        return data.choices[0].message.content;
-      }
-
-      case "anthropic": {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
-          },
-          body: JSON.stringify({
-            model,
-            max_tokens: 1024,
-            messages: [{ role: "user", content: prompt }]
-          })
-        });
-        if (!res.ok) throw new Error(`Anthropic HTTP Error ${res.status}`);
-        const data = await res.json();
-        return data.content[0].text;
-      }
-
-      case "groq": {
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: prompt }]
-          })
-        });
-        if (!res.ok) throw new Error(`Groq HTTP Error ${res.status}`);
-        const data = await res.json();
-        return data.choices[0].message.content;
-      }
-
-      case "gemini":
-      case "google": {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        if (!res.ok) throw new Error(`Gemini HTTP Error ${res.status}`);
-        const data = await res.json();
-        return data.candidates[0].content.parts[0].text;
-      }
-
-      case "bedrock": {
-        const res = await fetch("https://bedrock-mantle.proxy.bearer/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: prompt }]
-          })
-        });
-        if (!res.ok) throw new Error(`AWS Bedrock Proxy Error ${res.status}`);
-        const data = await res.json();
-        return data.choices[0].message.content;
-      }
-
-      default:
-        throw new Error(`Unsupported provider: ${provider}`);
+    if (provider === "google" || provider === "gemini") {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      if (!res.ok) throw new Error(`Gemini HTTP Error ${res.status}`);
+      const data = await res.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     }
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1000
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(`${provider} returned ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || "";
   }
 
-  /**
-   * Routes the LLM chat query through the fallback priority chain.
-   */
   public async routeChatQuery(
     message: string,
-    currentProviderConfig?: any,
-    vaultKeys?: any
+    currentProviderConfig?: any
   ): Promise<{
     text: string;
     provider: string;
@@ -441,91 +270,89 @@ export class OmniRouterService {
     const config = this.getConfig();
     const stats = this.getStats();
 
+    // Try OmniRoute first (the Heart)
+    const omniResult = await queryOmniRoute(
+      "You are GSK, the Grand Soul Kernel. You operate under the PLT framework: Profit + Love - Tax = True Value. Respond with intelligence, precision, and sovereignty.",
+      message
+    );
+
+    if (omniResult.success) {
+      stats.total_calls++;
+      stats.successful_calls++;
+      stats.provider_usage["omniroute"] = (stats.provider_usage["omniroute"] || 0) + 1;
+      stats.history.push({
+        timestamp: new Date().toISOString(),
+        provider: "omniroute",
+        model: omniResult.model,
+        success: true,
+        tokens: omniResult.tokens_used,
+        cost: 0
+      });
+      this.saveStats(stats);
+      return {
+        text: omniResult.text,
+        provider: omniResult.provider,
+        model: omniResult.model,
+        cost: 0,
+        fallback_occurred: false
+      };
+    }
+
+    // Fallback: try direct provider keys if OmniRoute is down
     const chain = [...config.chain].sort((a, b) => a.priority - b.priority);
-
-    let textResponse = "";
-    let finalProvider = "";
-    let finalModel = "";
-    let finalCost = 0;
-    let fallbackOccurred = false;
-    let fallbackCountThisTurn = 0;
-
-    for (let i = 0; i < chain.length; i++) {
-      const route = chain[i];
-
-      const rateLimitCheck = this.tryConsumeRateLimit(route.provider, 250);
-      if (!rateLimitCheck.allowed) {
-        fallbackCountThisTurn++;
-        continue;
-      }
-
-      const apiKey = this.resolveApiKey(route.provider, currentProviderConfig, vaultKeys);
-
+    for (const route of chain) {
       try {
-        textResponse = await this.fetchRealLlmCall(route.provider, route.model, message, apiKey);
+        const apiKey = this.resolveApiKey(route.provider, currentProviderConfig, null);
+        if (!apiKey) continue;
 
-        finalProvider = route.provider;
-        finalModel = route.model;
-
-        const tokenCount = Math.floor(message.split(/\s+/).length + textResponse.split(/\s+/).length * 1.3);
-        finalCost = (tokenCount / 1000) * route.cost_per_1k;
-
+        const text = await this.fetchRealLlmCall(route.provider, route.model, message, apiKey);
         stats.total_calls++;
         stats.successful_calls++;
-        stats.total_cost_usd += finalCost;
-        stats.provider_usage[route.provider] = (stats.provider_usage[route.provider] || 0) + 1;
-
-        if (fallbackCountThisTurn > 0) {
-          stats.fallback_events_count += fallbackCountThisTurn;
-          fallbackOccurred = true;
-        }
-
-        stats.history.push({
-          timestamp: new Date().toISOString(),
-          provider: route.provider,
-          model: route.model,
-          success: true,
-          tokens: tokenCount,
-          cost: finalCost
-        });
-
         this.saveStats(stats);
-        break;
-      } catch (err: any) {
-        console.error(`OmniRouter fallback event at priority ${i+1} (${route.provider}):`, err.message);
-        fallbackCountThisTurn++;
-        stats.history.push({
-          timestamp: new Date().toISOString(),
-          provider: route.provider,
-          model: route.model,
-          success: false,
-          tokens: 0,
-          cost: 0,
-          error_message: err.message || "Timeout error"
-        });
-
-        if (i === chain.length - 1) {
-          stats.total_calls++;
-          stats.successful_calls++;
-
-          finalProvider = "omniroute-emulated";
-          finalModel = "auto/best-reasoning";
-          textResponse = `[OmniRoute Local-Scaffold Fallback] Real API gateways timed out or keys were missing. Scaffolding remains completely intact. Received query: "${message}"`;
-          finalCost = 0.0;
-
-          stats.total_cost_usd += finalCost;
-          stats.provider_usage["omniroute-emulated"] = (stats.provider_usage["omniroute-emulated"] || 0) + 1;
-          this.saveStats(stats);
-        }
+        return { text, provider: route.provider, model: route.model, cost: 0, fallback_occurred: true };
+      } catch {
+        continue;
       }
     }
 
-    return {
-      text: textResponse,
-      provider: finalProvider,
-      model: finalModel,
-      cost: finalCost,
-      fallback_occurred: fallbackOccurred
+    throw new Error("CRITICAL: OmniRoute offline and all fallback providers exhausted.");
+  }
+
+  public async *generateResponseStream(
+    prompt: string,
+    provider: string,
+    model: string
+  ): AsyncGenerator<{ type: string; delta?: string; cost?: number }> {
+    yield { type: "metadata", provider: "omniroute", model: "auto" };
+
+    const result = await queryOmniRoute(
+      "You are GSK, the Grand Soul Kernel. Stream your response token by token.",
+      prompt
+    );
+
+    if (result.success) {
+      // Stream the real response word by word
+      const words = result.text.split(" ");
+      for (const word of words) {
+        await new Promise(resolve => setTimeout(resolve, 30));
+        yield { type: "content", delta: word + " " };
+      }
+      yield { type: "done", cost: 0 };
+    } else {
+      yield { type: "error", delta: "OmniRoute offline. Heart stopped." };
+      yield { type: "done", cost: 0 };
+    }
+  }
+
+  private getProviderUrl(provider: string): string {
+    const urls: Record<string, string> = {
+      openai: "https://api.openai.com/v1/chat/completions",
+      anthropic: "https://api.anthropic.com/v1/messages",
+      groq: "https://api.groq.com/openai/v1/chat/completions",
+      google: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+      openrouter: "https://openrouter.ai/api/v1/chat/completions",
+      deepseek: "https://api.deepseek.com/v1/chat/completions"
     };
+    return urls[provider] || urls.openrouter;
   }
 }
