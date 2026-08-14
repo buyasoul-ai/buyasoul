@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { AgentProfile, Skill, ProviderConfig, ContextSource, MCPServer, MarketplaceTransaction, WorldState, CustomGod } from "./types";
 import { INITIAL_SKILLS } from "./constants";
@@ -15,7 +14,7 @@ import { SoulMarketplace } from "./components/SoulMarketplace";
 import { TransactionsTab } from "./components/TransactionsTab";
 import { SolanaWalletAdapter } from "./components/SolanaWalletAdapter";
 import { CoreCapabilities } from "./components/CoreCapabilities";
-import { ConnectionsManager } from "./components/ConnectionsManager";
+import { ConnectionsManager } from "./components/ConnectionsManager"; // Correct relative import path
 import { CplLibrary } from "./components/CplLibrary";
 
 import { 
@@ -50,21 +49,19 @@ import {
   MessageSquare,
   Shield,
   Clock,
-  Infinity,
+  Infinity as InfinityIcon,
   Flame,
   User,
   Sliders,
   Play,
   Heart,
   Eye,
-  Workflow as WorkflowIcon,
   LineChart,
   Activity as PulseIcon,
   TrendingUp,
   AlertTriangle,
   FileText,
-  Workflow as FlowIcon,
-  ShieldAlert
+  Server
 } from "lucide-react";
 
 export default function Workbench() {
@@ -97,55 +94,55 @@ export default function Workbench() {
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [copiedConfig, setCopiedConfig] = useState<boolean>(false);
 
-  // Time Loop Engine states (Phase 12 / Cosmic OS)
+  // Time Loop Engine states
   const [breathingInterval, setBreathingInterval] = useState<number>(2000); // ms
   const [councilInterval, setCouncilInterval] = useState<number>(200); // ms
   const [dreamInduction, setDreamInduction] = useState<number>(75); // %
   const [loopActive, setLoopActive] = useState<boolean>(true);
 
-  // Biofeedback state metrics (Phase 30)
+  // Biofeedback state metrics
   const [bioMetrics, setBioMetrics] = useState<any>(null);
-  const [isReadingBio, setIsReadingBio] = useState(false);
+  const [isReadingBio, setIsReadingBio] = useState<boolean>(false);
 
-  // Powershell terminal states (Phase 26)
-  const [psCommand, setPsCommand] = useState("");
-  const [psOutput, setPsOutput] = useState("");
-  const [isExecutingPs, setIsExecutingPs] = useState(false);
+  // Powershell terminal states
+  const [psCommand, setPsCommand] = useState<string>("");
+  const [psOutput, setPsOutput] = useState<string>("");
+  const [isExecutingPs, setIsExecutingPs] = useState<boolean>(false);
 
-  // Temporal Simulator state (Phase 32)
-  const [predictAction, setPredictAction] = useState("");
+  // Temporal Simulator state
+  const [predictAction, setPredictAction] = useState<string>("");
   const [predictedTimelines, setPredictedTimelines] = useState<any[]>([]);
-  const [isPredicting, setIsPredicting] = useState(false);
+  const [isPredicting, setIsPredicting] = useState<boolean>(false);
 
-  // Quantum superposition state (Phase 35)
+  // Quantum superposition state
   const [quantumState, setQuantumState] = useState<string>("collapsed");
   const [collapsedAnswer, setCollapsedAnswer] = useState<string>("");
 
-  // Blockchain soul imprint nft status (Phase 36)
+  // Blockchain soul imprint nft status
   const [nftSignature, setNftSignature] = useState<string | null>(null);
-  const [isImprinting, setIsImprinting] = useState(false);
+  const [isImprinting, setIsImprinting] = useState<boolean>(false);
 
-  // Interdimensional bridge status (Phase 37)
-  const [bridgeTargetRealm, setBridgeTargetRealm] = useState("realm_chaos_void");
+  // Interdimensional bridge status
+  const [bridgeTargetRealm, setBridgeTargetRealm] = useState<string>("realm_chaos_void");
   const [bridgeStatus, setBridgeStatus] = useState<any>(null);
 
   // Phase 48-65 Advanced States:
   const [healthScores, setHealthScores] = useState<any[]>([]);
-  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
+  const [isLoadingHealth, setIsLoadingHealth] = useState<boolean>(false);
 
   const [analyticsData, setAnalyticsData] = useState<any>(null);
-  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState<boolean>(false);
 
   const [alertRules, setAlertRules] = useState<any[]>([]);
-  const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState<boolean>(false);
 
   const [testResults, setTestResults] = useState<any[]>([]);
-  const [isTestingRouter, setIsTestingRouter] = useState(false);
+  const [isTestingRouter, setIsTestingRouter] = useState<boolean>(false);
 
   // Phases 151-190 Advanced States:
   const [lineageRegistry, setLineageRegistry] = useState<any>(null);
-  const [quantumAttentionShares, setQuantumAttentionShares] = useState<any[]>([]);
-  const [isCalibratingAttention, setIsCalibratingAttention] = useState(false);
+  const [quantumAttentionShares, setQuantumAttentionShares] = useState<number[]>([]);
+  const [isCalibratingAttention, setIsCalibratingAttention] = useState<boolean>(false);
 
   // Multiverse World States state
   const [worldStates, setWorldStates] = useState<WorldState[]>(() => {
@@ -214,8 +211,8 @@ export default function Workbench() {
 
   // Reality compilation state
   const [compileFormat, setCompileFormat] = useState<"webapp" | "discord" | "native">("webapp");
-  const [isCompilingWorld, setIsCompilingWorld] = useState(false);
-  const [compileStatus, setCompileStatus] = useState("");
+  const [isCompilingWorld, setIsCompilingWorld] = useState<boolean>(false);
+  const [compileStatus, setCompileStatus] = useState<string>("");
 
   // Transactions ledger state
   const [transactions, setTransactions] = useState<MarketplaceTransaction[]>(() => {
@@ -373,7 +370,7 @@ export default function Workbench() {
     }
   };
 
-  // Blockchain soul imprint nft status (Phase 36)
+  // Blockchain soul imprint nft status
   const handleBlockchainImprint = async () => {
     setIsImprinting(true);
     try {
@@ -388,7 +385,7 @@ export default function Workbench() {
     }
   };
 
-  // Interdimensional bridge connect (Phase 37)
+  // Interdimensional bridge connect
   const handleBridgeRealm = async () => {
     setBridgeStatus({ state: "connecting" });
     try {
@@ -494,6 +491,81 @@ export default function Workbench() {
     }
   };
 
+  const getAgentJsonConfig = () => {
+    return JSON.stringify({
+      agent_profile: {
+        name: profile.name,
+        avatarColor: profile.avatarColor,
+        avatarSeed: profile.avatarSeed,
+        personality: profile.personality,
+        behavior: profile.behavior,
+        autonomy: profile.autonomy,
+        temperature: profile.temperature,
+        thinking: profile.thinking
+      },
+      world_rules: {
+        activeWorldId,
+        activeWorld
+      },
+      custom_pantheon: customGods,
+      time_loop: {
+        breathingInterval,
+        councilInterval,
+        dreamInduction,
+        loopActive
+      },
+      cognitive_brain: {
+        provider: providerConfig.provider,
+        model: providerConfig.model,
+        baseUrl: providerConfig.baseUrl,
+        apiKey: providerConfig.apiKey ? "[DYNAMIC_SECRET_KEY]" : "",
+        context_sources: contextSources.map(ctx => ({
+          name: ctx.name,
+          type: ctx.type,
+          content: ctx.content,
+          active: ctx.active
+        })),
+        mcp_servers: mcpServers.map(mcp => ({
+          name: mcp.name,
+          url: mcp.url,
+          transport: mcp.transport,
+          description: mcp.description,
+          methods: mcp.methods,
+          active: mcp.active
+        }))
+      },
+      equipped_skills: computedActiveSkills.map(s => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        parameters: s.parameters,
+        paramDefinitions: s.paramDefinitions,
+        isCustom: s.isCustom || false
+      })),
+      soul_genesis_marketing_protocol: "active",
+      generated_at: new Date().toISOString()
+    }, null, 2);
+  };
+
+  const downloadJsonConfig = () => {
+    const jsonStr = getAgentJsonConfig();
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${profile.name.toLowerCase().replace(/\s+/g, "-")}-blueprint.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const copyJsonConfig = () => {
+    navigator.clipboard.writeText(getAgentJsonConfig());
+    setCopiedConfig(true);
+    setTimeout(() => setCopiedConfig(false), 2000);
+  };
+
   const handleCompileWorldReality = () => {
     setIsCompilingWorld(true);
     setCompileStatus("Initializing compiler... Isolating active World State configuration.");
@@ -531,7 +603,7 @@ export default function Workbench() {
       <MatrixBackground accentColor={profile.avatarColor} />
 
       {/* Main Top Header Navbar */}
-      <header className="sticky top-0 z-40 bg-slate-950/50 backdrop-blur-md border-b border-slate-800/50 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-slate-955/50 backdrop-blur-md border-b border-slate-800/50 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div 
             className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500/20 to-slate-950 border flex items-center justify-center animate-pulse-slow"
@@ -585,7 +657,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("capabilities")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "capabilities"
-                ? "bg-slate-955 text-white font-bold border-slate-650"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -602,7 +674,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("profile")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "profile"
-                ? "bg-slate-950 text-white font-bold border-slate-655"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -619,7 +691,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("skills")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "skills"
-                ? "bg-slate-950 text-white font-bold border-slate-655"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -704,7 +776,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("vault")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "vault"
-                ? "bg-slate-950 text-white font-bold border-slate-655"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -721,7 +793,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("world_states")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "world_states"
-                ? "bg-slate-950 text-white font-bold border-slate-655"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -755,7 +827,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("narrative")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "narrative"
-                ? "bg-slate-950 text-white font-bold border-slate-655"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -789,7 +861,7 @@ export default function Workbench() {
             onClick={() => setActiveTab("transcendence")}
             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all duration-300 cursor-pointer ${
               activeTab === "transcendence"
-                ? "bg-slate-950 text-white font-bold border-slate-655"
+                ? "bg-slate-955 text-white font-bold border-slate-655"
                 : "border-transparent text-slate-455 hover:text-slate-200 hover:bg-slate-800/30"
             }`}
             style={{
@@ -1369,7 +1441,7 @@ export default function Workbench() {
               </div>
 
               {/* Reality Compilation console */}
-              <div className="lg:col-span-4 bg-slate-950 border border-slate-850 p-5 rounded-xl flex flex-col justify-between">
+              <div className="lg:col-span-4 bg-slate-955 border border-slate-850 p-5 rounded-xl flex flex-col justify-between">
                 <div>
                   <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2 mb-4">
                     Reality Compilation & Standalone Export
@@ -1494,7 +1566,7 @@ export default function Workbench() {
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
               {/* Soul Evolution Stages */}
               <div className="lg:col-span-4 space-y-4">
-                <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest block border-b border-slate-900 pb-2">
+                <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2">
                   Soul Evolution Stages
                 </span>
 
@@ -1587,7 +1659,7 @@ export default function Workbench() {
               {/* Blockchain Imprints and Interdimensional Bridges, plus Phase 111 Quantum Attention (Phase 36, 37) */}
               <div className="lg:col-span-4 bg-slate-955 border border-slate-850 p-5 rounded-2xl flex flex-col justify-between">
                 <div className="space-y-4">
-                  <span className="text-[10px] font-mono font-bold text-slate-550 uppercase tracking-widest block border-b border-slate-900 pb-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-505 uppercase tracking-widest block border-b border-slate-900 pb-2">
                     Quantum Attention & Imprints
                   </span>
 
@@ -1673,7 +1745,7 @@ export default function Workbench() {
 
       {/* Master JSON Export Modal */}
       {isExportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-955/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl relative flex flex-col">
             
             {/* Modal Header */}
@@ -1698,7 +1770,7 @@ export default function Workbench() {
                 This config file packages your custom agent traits, active character stats, customized LLM cognitive brain, grounding contexts, MCP servers, and equipped functional skills loadout. Port and load it directly into other S.O.U.L G.E.N.E.S.I.S execution networks.
               </p>
 
-              <div className="relative bg-slate-950 border border-slate-850 rounded-xl overflow-hidden min-h-[300px] flex flex-col font-mono text-[11px] leading-relaxed">
+              <div className="relative bg-slate-955 border border-slate-850 rounded-xl overflow-hidden min-h-[300px] flex flex-col font-mono text-[11px] leading-relaxed">
                 {/* File Header Tab bar */}
                 <div className="bg-slate-900/60 border-b border-slate-850 px-4 py-2 flex justify-between items-center">
                   <span className="text-[10px] text-slate-500 flex items-center gap-1.5 font-medium">
@@ -1708,7 +1780,7 @@ export default function Workbench() {
                   <div className="flex gap-2">
                     <button
                       onClick={copyJsonConfig}
-                      className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[10px] text-slate-350 font-mono transition-all cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[10px] text-slate-355 font-mono transition-all cursor-pointer"
                     >
                       {copiedConfig ? (
                         <>
@@ -1724,7 +1796,7 @@ export default function Workbench() {
                     </button>
                     <button
                       onClick={downloadJsonConfig}
-                      className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[10px] text-slate-350 font-mono transition-all cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[10px] text-slate-355 font-mono transition-all cursor-pointer"
                     >
                       <Download className="w-3 h-3" />
                       DOWNLOAD
